@@ -12,7 +12,6 @@
   <style>
     body { font-family: 'Inter', sans-serif; padding-bottom: 68px; }
     .timer-progress { transition: width 1s linear; }
-    /* Custom Scrollbar for Chat & Lists */
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); border-radius: 8px; }
     ::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.5); border-radius: 8px; }
@@ -20,35 +19,49 @@
   </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between p-4 sm:p-6">
+
+  <!-- Custom In-App Toast Notification (Replaces ugly file:// alert popups) -->
+  <div id="custom-toast" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 hidden max-w-sm w-[92%] bg-slate-900/95 border-2 border-rose-500 text-white px-4 py-3 rounded-2xl shadow-2xl backdrop-blur-md transition-all">
+    <div class="flex items-center justify-between gap-3">
+      <div class="flex items-center gap-2.5">
+        <span id="toast-badge" class="w-2.5 h-2.5 rounded-full bg-rose-500 flex-shrink-0 animate-ping"></span>
+        <p id="toast-message" class="text-xs sm:text-sm font-bold text-slate-100"></p>
+      </div>
+      <button type="button" id="btn-close-toast" class="text-xs font-bold text-slate-400 hover:text-white bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-700">
+        OK
+      </button>
+    </div>
+  </div>
+
   <div class="max-w-md w-full mx-auto my-auto relative">
 
-    <!-- Top Action Bar (Round Counter & Audio Mixer Button) -->
+    <!-- Top Action Bar -->
     <div class="flex items-center justify-between mb-3">
       <div class="text-xs bg-slate-800 text-slate-300 font-semibold px-3 py-1.5 rounded-xl border border-slate-700/80 flex items-center gap-1.5 shadow-sm">
-        <span> Round <strong id="rounds-count-text" class="text-indigo-400 font-bold">0</strong></span>
+        <span>Round <strong id="rounds-count-text" class="text-indigo-400 font-bold">0</strong></span>
       </div>
       <div class="flex items-center gap-1.5">
         <button id="btn-open-audio-modal" type="button" class="py-1.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition flex items-center gap-1.5 shadow-sm">
-          <span id="top-audio-icon"></span>
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+          </svg>
           <span>Audio & Music</span>
         </button>
       </div>
     </div>
 
-    <!-- Audio & Volume Controller Modal (Collapsible Drawer) -->
+    <!-- Audio & Volume Controller Modal -->
     <div id="audio-settings-panel" class="hidden mb-4 bg-slate-800/95 border border-indigo-500/40 rounded-2xl p-4 shadow-2xl backdrop-blur-md">
       <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-700">
-        <span class="text-xs font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-1.5">
-           Sound & Music Mixer
-        </span>
-        <button type="button" id="btn-close-audio-modal" class="text-xs text-slate-400 hover:text-white font-bold px-2 py-0.5 rounded bg-slate-700"> Close</button>
+        <span class="text-xs font-bold uppercase tracking-wider text-indigo-300">Sound & Music Mixer</span>
+        <button type="button" id="btn-close-audio-modal" class="text-xs text-slate-300 hover:text-white font-bold px-2.5 py-1 rounded-lg bg-slate-700">Close</button>
       </div>
 
       <!-- Background Music Control -->
       <div class="mb-3.5 bg-slate-900/90 p-3 rounded-xl border border-slate-700/80">
         <div class="flex items-center justify-between mb-2">
           <div>
-            <span class="text-xs font-bold text-white block"> Background Music</span>
+            <span class="text-xs font-bold text-white block">Background Music</span>
             <span id="bgm-track-label" class="text-[10px] text-indigo-400 font-medium">Track: Lobby Chill Tune</span>
           </div>
           <button type="button" id="btn-toggle-music" class="px-3 py-1 rounded-lg text-xs font-bold bg-indigo-600 text-white transition">
@@ -56,7 +69,7 @@
           </button>
         </div>
         <div class="flex items-center gap-2.5">
-          <span class="text-xs text-slate-400"></span>
+          <span class="text-[11px] text-slate-400 font-semibold">Vol</span>
           <input type="range" id="slider-music-vol" min="0" max="100" value="45" class="w-full accent-indigo-500 h-1.5 bg-slate-700 rounded-lg cursor-pointer">
           <span id="label-music-vol" class="text-xs font-mono text-slate-300 w-9 text-right">45%</span>
         </div>
@@ -66,7 +79,7 @@
       <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-700/80">
         <div class="flex items-center justify-between mb-2">
           <div>
-            <span class="text-xs font-bold text-white block"> Sound Effects (SFX)</span>
+            <span class="text-xs font-bold text-white block">Sound Effects (SFX)</span>
             <span class="text-[10px] text-slate-400">Clicks, Alerts, Victory & Timer</span>
           </div>
           <button type="button" id="btn-toggle-sfx" class="px-3 py-1 rounded-lg text-xs font-bold bg-emerald-600 text-white transition">
@@ -74,7 +87,7 @@
           </button>
         </div>
         <div class="flex items-center gap-2.5">
-          <span class="text-xs text-slate-400"></span>
+          <span class="text-[11px] text-slate-400 font-semibold">Vol</span>
           <input type="range" id="slider-sfx-vol" min="0" max="100" value="75" class="w-full accent-emerald-500 h-1.5 bg-slate-700 rounded-lg cursor-pointer">
           <span id="label-sfx-vol" class="text-xs font-mono text-slate-300 w-9 text-right">75%</span>
         </div>
@@ -85,7 +98,6 @@
     <header class="text-center mb-4">
       <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-600 via-purple-600 to-rose-600 p-0.5 mb-2 shadow-lg shadow-indigo-500/25">
         <div class="w-full h-full bg-slate-900 rounded-[14px] flex items-center justify-center">
-          <!-- Custom Spy Hat & Mask SVG Icon -->
           <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-indigo-400" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2C9.5 2 7.5 3.5 7 6L4 7.5C3.4 7.8 3 8.4 3 9C3 10.1 3.9 11 5 11H19C20.1 11 21 10.1 21 9C21 8.4 20.6 7.8 20 7.5L17 6C16.5 3.5 14.5 2 12 2ZM6 13C4.3 13 3 14.3 3 16C3 17.7 4.3 19 6 19C7.4 19 8.6 18 8.9 16.7L10.2 16H13.8L15.1 16.7C15.4 18 16.6 19 18 19C19.7 19 21 17.7 21 16C21 14.3 19.7 13 18 13C16.8 13 15.7 13.7 15.2 14.7L13.6 14H10.4L8.8 14.7C8.3 13.7 7.2 13 6 13ZM6 15C6.6 15 7 15.4 7 16C7 16.6 6.6 17 6 17C5.4 17 5 16.6 5 16C5 15.4 5.4 15 6 15ZM18 15C18.6 15 19 15.4 19 16C19 16.6 18.6 17 18 17C17.4 17 17 16.6 17 16C17 15.4 17.4 15 18 15Z"/>
           </svg>
@@ -98,10 +110,10 @@
     <!-- Main Mode Switcher (Offline vs Online) -->
     <div id="mode-switcher-bar" class="grid grid-cols-2 gap-2 p-1.5 bg-slate-800/90 border border-slate-700/80 rounded-2xl mb-4 shadow-md">
       <button type="button" id="tab-offline-mode" class="py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm bg-indigo-600 text-white shadow transition flex items-center justify-center gap-1.5">
-        <span></span> Pass & Play
+        <span>Pass & Play</span>
       </button>
       <button type="button" id="tab-online-mode" class="py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm text-slate-400 hover:text-white transition flex items-center justify-center gap-1.5">
-        <span></span> Play Online
+        <span>Play Online</span>
       </button>
     </div>
 
@@ -112,9 +124,7 @@
     <!-- Online Screen A: Create or Join Room -->
     <section id="screen-online-menu" class="hidden bg-slate-800/90 border border-slate-700/80 rounded-2xl p-5 sm:p-6 shadow-xl backdrop-blur-sm">
       <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-bold text-white flex items-center gap-2">
-          <span></span> Online Multiplayer
-        </h2>
+        <h2 class="text-lg font-bold text-white">Online Multiplayer</h2>
         <span class="text-[11px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2.5 py-0.5 rounded-full font-semibold">Live Rooms</span>
       </div>
 
@@ -127,7 +137,7 @@
         <h3 class="text-sm font-bold text-indigo-300 mb-1">Host a New Game</h3>
         <p class="text-xs text-slate-400 mb-3">Create a room and share the 4-digit code with your friends.</p>
         <button type="button" id="btn-create-room" class="w-full py-3 px-4 rounded-xl font-bold bg-indigo-600 hover:bg-indigo-500 text-white text-sm shadow-lg shadow-indigo-600/25 transition flex items-center justify-center gap-2">
-          <span> Create Online Room</span>
+          <span>Create Online Room</span>
         </button>
       </div>
 
@@ -164,7 +174,7 @@
         <div class="flex items-center justify-center gap-3 mt-1">
           <span id="lobby-room-code" class="text-4xl font-extrabold font-mono tracking-widest text-amber-300">----</span>
           <button type="button" id="btn-copy-code" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-indigo-300 border border-slate-700 transition">
-             Copy
+            Copy Code
           </button>
         </div>
       </div>
@@ -182,19 +192,19 @@
         <div>
           <label class="block text-xs font-semibold text-slate-300 mb-1">Select Word Category</label>
           <select id="online-category-select" class="w-full bg-slate-900 border border-slate-700 text-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none">
-            <option value="all"> All Categories (Mixed)</option>
-            <option value="desi" selected> Desi / Indian Special</option>
-            <option value="bollywood"> Bollywood & Movies</option>
-            <option value="cricket"> Cricket & Sports</option>
-            <option value="food"> Food & Drinks</option>
-            <option value="places"> Places & Cities</option>
-            <option value="objects"> Everyday Objects & Games</option>
-            <option value="fruits"> Fruits & Vegetables</option>
-            <option value="people"> Famous People</option>
+            <option value="all">All Categories (Mixed)</option>
+            <option value="desi" selected>Desi / Indian Special</option>
+            <option value="bollywood">Bollywood & Movies</option>
+            <option value="cricket">Cricket & Sports</option>
+            <option value="food">Food & Drinks</option>
+            <option value="places">Places & Cities</option>
+            <option value="objects">Everyday Objects & Games</option>
+            <option value="fruits">Fruits & Vegetables</option>
+            <option value="people">Famous People</option>
           </select>
         </div>
 
-        <!-- Online Imposter Count Selector (Enabled when 6-8 players) -->
+        <!-- Online Imposter Count Selector -->
         <div class="bg-slate-900/90 border border-slate-700 rounded-xl p-3">
           <div class="flex items-center justify-between mb-1.5">
             <span class="text-xs font-semibold text-slate-300">Number of Imposters</span>
@@ -206,43 +216,40 @@
           </div>
         </div>
 
+        <!-- Inline Lobby Warning Box (No browser alert popup!) -->
+        <div id="online-lobby-error" class="hidden p-2.5 rounded-xl bg-rose-950/70 border border-rose-500/50 text-xs font-semibold text-rose-300 text-center"></div>
+
         <button type="button" id="btn-online-start" class="w-full py-3.5 px-4 rounded-xl font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30 transition flex items-center justify-center gap-2">
-          <span> Start Online Game</span>
+          <span>Start Online Game</span>
         </button>
       </div>
 
       <div id="online-guest-waiting" class="hidden text-center py-3 bg-slate-900/70 rounded-xl border border-slate-700/70">
-        <p class="text-xs text-amber-300 font-semibold animate-pulse"> Waiting for the Host to start the game...</p>
+        <p class="text-xs text-amber-300 font-semibold animate-pulse">Waiting for the Host to start the game...</p>
       </div>
     </section>
 
-    <!-- Online Screen C: Live Game (Secret Word + Full Scrollable Chat + Live Voting) -->
+    <!-- Online Screen C: Live Game -->
     <section id="screen-online-game" class="hidden bg-slate-800/90 border border-slate-700/80 rounded-2xl p-4 sm:p-5 shadow-xl">
       <div class="flex items-center justify-between mb-2">
         <span id="online-game-cat" class="text-xs font-bold bg-indigo-900/60 text-indigo-300 px-2.5 py-1 rounded-full border border-indigo-500/30">Category: Desi</span>
         <span id="online-imp-count-badge" class="text-[11px] font-bold bg-rose-500/20 text-rose-300 px-2.5 py-0.5 rounded-full border border-rose-500/30">1 Imposter</span>
       </div>
 
-      <!-- Player's Personal Secret Word Card -->
       <div class="my-2.5 p-3.5 bg-gradient-to-b from-indigo-950/70 to-slate-900 border border-indigo-500/40 rounded-2xl text-center">
         <span class="text-[11px] uppercase tracking-wider text-slate-400 block">Your Secret Word (Keep it Secret!)</span>
         <div id="online-my-word" class="text-2xl sm:text-3xl font-extrabold text-amber-300 tracking-wide my-1">Samosa</div>
-        <button type="button" id="btn-toggle-online-word" class="text-[11px] text-indigo-300 underline"> Hide Word</button>
+        <button type="button" id="btn-toggle-online-word" class="text-[11px] text-indigo-300 underline font-semibold">Hide Word</button>
       </div>
 
-      <!-- IMPROVED Live Clues / Full Scrollable Chat History -->
+      <!-- Full Scrollable Chat History -->
       <div class="bg-slate-900/95 border border-slate-700 rounded-xl p-3 mb-3.5">
         <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-slate-800">
-          <span class="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1">
-             Clues & Chat History
-          </span>
+          <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">Clues & Chat History</span>
           <span id="online-chat-count" class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-semibold">0 Messages</span>
         </div>
 
-        <!-- Tall Scrollable Container so all old & new messages are clearly visible -->
-        <div id="online-clues-list" class="space-y-2 h-52 overflow-y-auto mb-2.5 pr-1.5 text-xs flex flex-col">
-          <!-- Messages injected here -->
-        </div>
+        <div id="online-clues-list" class="space-y-2 h-52 overflow-y-auto mb-2.5 pr-1.5 text-xs flex flex-col"></div>
 
         <form id="online-clue-form" class="flex gap-1.5">
           <input type="text" id="online-clue-input" placeholder="Type your clue or message..." maxlength="60" autocomplete="off" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-indigo-500">
@@ -255,14 +262,14 @@
       <!-- Live Voting Section -->
       <div class="bg-slate-900/90 border border-slate-700 rounded-xl p-3.5 mb-3">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-xs font-bold uppercase tracking-wider text-amber-400"> Vote the Imposter</span>
+          <span class="text-xs font-bold uppercase tracking-wider text-amber-400">Vote the Imposter</span>
           <span id="online-votes-counter" class="text-xs text-slate-400 font-semibold">0 / 0 Voted</span>
         </div>
         <div id="online-voting-grid" class="grid grid-cols-2 gap-2"></div>
       </div>
 
       <button type="button" id="btn-online-host-reveal" class="hidden w-full py-3 px-4 rounded-xl font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs shadow transition">
-         End Voting & Reveal Results (Host)
+        End Voting & Reveal Results (Host)
       </button>
     </section>
 
@@ -281,55 +288,56 @@
 
       <div class="flex gap-2 mb-4">
         <button id="btn-add-player" type="button" class="flex-1 py-2 px-3 text-sm font-medium rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition flex items-center justify-center gap-1.5">
-          <span> Add Player</span>
+          <span>+ Add Player</span>
         </button>
       </div>
 
-      <!-- NEW: Imposter Count Selector (1 vs 2 Imposters for 6-8 Players) -->
+      <!-- Imposter Count Selector (1 vs 2 Imposters for 6-8 Players) -->
       <div class="mb-4 bg-slate-900/90 border border-slate-700/80 rounded-xl p-3">
         <div class="flex items-center justify-between mb-1.5">
-          <label class="text-xs font-bold uppercase tracking-wider text-rose-400"> Imposter Count</label>
-          <span id="offline-imposter-hint" class="text-[11px] text-slate-400">Add 6–8 players to unlock 2 Imposters</span>
+          <label class="text-xs font-bold uppercase tracking-wider text-rose-400">Imposter Count</label>
+          <span id="offline-imposter-hint" class="text-[11px] text-slate-400">Add 6 to 8 players to unlock 2 Imposters</span>
         </div>
         <div class="grid grid-cols-2 gap-2">
           <button type="button" id="btn-offline-imp-1" class="py-2 px-3 rounded-lg text-xs font-bold bg-indigo-600 text-white shadow transition">
             1 Imposter
           </button>
           <button type="button" id="btn-offline-imp-2" class="py-2 px-3 rounded-lg text-xs font-bold bg-slate-800 text-slate-500 border border-slate-700 transition cursor-not-allowed" disabled>
-            2 Imposters (6–8 Players)
+            2 Imposters (6 to 8 Players)
           </button>
         </div>
       </div>
 
-      <!-- Word Source Mode Selector -->
+      <!-- Word Source Mode Selector (FIXED!) -->
       <div class="mb-4">
         <label class="block text-sm font-medium text-slate-300 mb-1.5">Word Source Mode</label>
         <div class="grid grid-cols-3 gap-1.5 p-1 bg-slate-900 border border-slate-700 rounded-xl">
-          <button type="button" id="btn-mode-builtin" class="py-1.5 px-2 text-xs font-semibold rounded-lg bg-indigo-600 text-white transition text-center shadow-sm">
-             Built-in
+          <button type="button" id="btn-mode-builtin" class="py-2 px-2 text-xs font-bold rounded-lg bg-indigo-600 text-white transition text-center shadow-sm">
+            Built-in
           </button>
-          <button type="button" id="btn-mode-mix" class="py-1.5 px-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-slate-200 transition text-center">
-             Mix Both
+          <button type="button" id="btn-mode-mix" class="py-2 px-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-slate-200 transition text-center">
+            Mix Both
           </button>
-          <button type="button" id="btn-mode-custom" class="py-1.5 px-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-slate-200 transition text-center">
-             Custom Only
+          <button type="button" id="btn-mode-custom" class="py-2 px-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-slate-200 transition text-center">
+            Custom Only
           </button>
         </div>
+        <p id="word-mode-desc" class="text-[11px] text-indigo-300 mt-1.5 font-medium">Using built-in category words.</p>
       </div>
 
       <!-- Category Selection -->
       <div id="category-section" class="mb-4">
         <label for="category-select" class="block text-sm font-medium text-slate-300 mb-1.5">Word Category</label>
         <select id="category-select" class="w-full bg-slate-900 border border-slate-700 text-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-          <option value="all"> All Categories (Mixed)</option>
-          <option value="desi" selected> Desi / Indian Special</option>
-          <option value="bollywood"> Bollywood & Movies</option>
-          <option value="cricket"> Cricket & Sports</option>
-          <option value="food"> Food & Drinks</option>
-          <option value="places"> Places & Cities</option>
-          <option value="objects"> Everyday Objects & Games</option>
-          <option value="fruits"> Fruits & Vegetables</option>
-          <option value="people"> Famous People</option>
+          <option value="all">All Categories (Mixed)</option>
+          <option value="desi" selected>Desi / Indian Special</option>
+          <option value="bollywood">Bollywood & Movies</option>
+          <option value="cricket">Cricket & Sports</option>
+          <option value="food">Food & Drinks</option>
+          <option value="places">Places & Cities</option>
+          <option value="objects">Everyday Objects & Games</option>
+          <option value="fruits">Fruits & Vegetables</option>
+          <option value="people">Famous People</option>
         </select>
       </div>
 
@@ -337,9 +345,8 @@
       <div class="bg-slate-900/80 border border-slate-700/80 rounded-xl p-3.5 mb-4">
         <div class="flex items-center justify-between mb-2">
           <div class="flex items-center gap-1.5">
-            <span class="text-amber-400"></span>
             <span class="text-xs font-bold uppercase tracking-wider text-slate-300">Custom Word Creator</span>
-            <span id="custom-words-badge" class="text-[10px] bg-slate-800 text-indigo-300 font-bold px-2 py-0.5 rounded-full border border-slate-700">0 Pairs</span>
+            <span id="custom-words-badge" class="text-[10px] bg-slate-800 text-indigo-300 font-bold px-2 py-0.5 rounded-full border border-slate-700">2 Pairs</span>
           </div>
           <button id="btn-toggle-custom-form" type="button" class="text-xs text-indigo-400 hover:text-indigo-300 font-semibold transition">
             - Close
@@ -370,24 +377,24 @@
       <div class="mb-4">
         <label for="timer-select" class="block text-sm font-medium text-slate-300 mb-1.5">Discussion Timer</label>
         <select id="timer-select" class="w-full bg-slate-900 border border-slate-700 text-slate-200 rounded-xl px-3.5 py-2.5 text-sm">
-          <option value="60"> 60 Seconds (Recommended)</option>
-          <option value="90"> 90 Seconds</option>
-          <option value="120"> 2 Minutes</option>
-          <option value="0"> Unlimited (No Timer)</option>
+          <option value="60">60 Seconds (Recommended)</option>
+          <option value="90">90 Seconds</option>
+          <option value="120">2 Minutes</option>
+          <option value="0">Unlimited (No Timer)</option>
         </select>
       </div>
 
       <!-- Session Leaderboard Card -->
       <div class="bg-slate-900/80 border border-slate-700/80 rounded-xl p-3.5 mb-5">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-xs font-bold uppercase tracking-wider text-slate-300"> Session Scoreboard</span>
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-300">Session Scoreboard</span>
           <button id="btn-reset-scores" type="button" class="text-[11px] text-slate-400 hover:text-rose-400 underline">Reset Scores</button>
         </div>
         <div id="setup-scoreboard-list" class="space-y-1.5 text-xs"></div>
       </div>
 
       <button id="btn-start-game" type="button" class="w-full py-3.5 px-4 rounded-xl font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30 transition flex items-center justify-center gap-2">
-        <span>Start Game </span>
+        <span>Start Game</span>
       </button>
     </section>
 
@@ -405,7 +412,7 @@
       <div id="card-hidden" class="my-6 p-8 bg-slate-900/80 border-2 border-dashed border-slate-700 rounded-2xl flex flex-col items-center justify-center">
         <p class="text-slate-300 font-medium">Ready to see your secret word?</p>
         <button id="btn-reveal-word" type="button" class="mt-4 px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow transition">
-           Tap to Reveal Word
+          Tap to Reveal Word
         </button>
       </div>
 
@@ -424,7 +431,7 @@
     <section id="screen-discuss" class="hidden bg-slate-800/90 border border-slate-700/80 rounded-2xl p-6 shadow-xl text-center">
       <div id="timer-container" class="bg-slate-900/90 border border-slate-700 rounded-2xl p-4 mb-4">
         <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
-          <span class="font-bold uppercase tracking-wider text-indigo-400"> Discussion Clock</span>
+          <span class="font-bold uppercase tracking-wider text-indigo-400">Discussion Clock</span>
           <span id="timer-status-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300">Active</span>
         </div>
         <div id="timer-display" class="text-4xl font-extrabold font-mono tracking-wider text-white my-2">01:00</div>
@@ -433,10 +440,10 @@
         </div>
         <div class="flex gap-2 justify-center">
           <button id="btn-timer-toggle" type="button" class="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-200 text-xs font-semibold border border-slate-700">
-            <span id="timer-toggle-text"> Pause</span>
+            <span id="timer-toggle-text">Pause</span>
           </button>
           <button id="btn-timer-add30" type="button" class="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-200 text-xs font-semibold border border-slate-700">
-             30s
+            +30s
           </button>
         </div>
       </div>
@@ -483,7 +490,7 @@
   </div>
 
   <footer class="text-center text-xs text-slate-500 py-3 mt-4">
-    Undercover Imposter • v2.5 (Music + 2 Imposters + Full Chat)
+    Undercover Imposter - v2.6 (Music + 2 Imposters + Full Chat)
   </footer>
 
   <script>
@@ -502,19 +509,36 @@
       return PLAYER_COLORS[index % PLAYER_COLORS.length];
     }
 
+    // --- Custom In-App Toast Banner (Replaces ugly browser alert()) ---
+    let toastTimeout = null;
+    const customToast = document.getElementById("custom-toast");
+    const toastMessage = document.getElementById("toast-message");
+
+    function showToast(msg) {
+      toastMessage.textContent = msg;
+      customToast.classList.remove("hidden");
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        customToast.classList.add("hidden");
+      }, 3800);
+    }
+
+    document.getElementById("btn-close-toast").addEventListener("click", () => {
+      customToast.classList.add("hidden");
+    });
+
     // =====================================================
     // DUAL BACKGROUND MUSIC & SFX SYNTHESIZER ENGINE
     // =====================================================
     let audioCtx = null;
     let musicEnabled = true;
     let sfxEnabled = true;
-    let musicVolume = 0.45; // 0.0 to 1.0
-    let sfxVolume = 0.75;   // 0.0 to 1.0
-    let currentMusicTheme = "lobby"; // 'lobby' or 'game'
+    let musicVolume = 0.45;
+    let sfxVolume = 0.75;
+    let currentMusicTheme = "lobby";
     let bgmInterval = null;
     let bgmStep = 0;
 
-    // Calm chill notes for Lobby vs Suspense Spy bass notes for Game
     const LOBBY_MELODY = [261.63, 329.63, 392.00, 493.88, 392.00, 329.63, 293.66, 349.23];
     const GAME_MELODY  = [146.83, 146.83, 174.61, 164.81, 146.83, 220.00, 196.00, 164.81];
 
@@ -533,8 +557,8 @@
       const trackLabel = document.getElementById("bgm-track-label");
       if (trackLabel) {
         trackLabel.textContent = currentMusicTheme === "lobby"
-          ? "Track:  Lobby Chill Tune"
-          : "Track:  Spy Suspense Beat";
+          ? "Track: Lobby Chill Tune"
+          : "Track: Spy Suspense Beat";
       }
 
       if (bgmInterval) {
@@ -574,7 +598,6 @@
       }, tempoMs);
     }
 
-    // Unlock audio on first touch anywhere
     document.addEventListener("click", () => {
       initAudio();
       if (musicEnabled && !bgmInterval) startBackgroundMusic(currentMusicTheme);
@@ -771,7 +794,6 @@
         modeSwitcherBar.classList.add("hidden");
       }
 
-      // Switch music tune automatically based on Lobby vs Active Game
       if (screen === screenSetup || screen === screenOnlineMenu || screen === screenOnlineLobby) {
         if (currentMusicTheme !== "lobby") startBackgroundMusic("lobby");
       } else {
@@ -800,7 +822,7 @@
     });
 
     // =====================================================
-    // ONLINE MULTIPLAYER ENGINE (Supports 1 or 2 Imposters + Full Chat)
+    // ONLINE MULTIPLAYER ENGINE
     // =====================================================
     let peer = null;
     let isOnlineHost = false;
@@ -813,7 +835,7 @@
 
     let onlineRoomState = {
       status: "lobby",
-      categoryName: " Desi Special",
+      categoryName: "Desi Special",
       imposterCount: 1,
       majorityWord: "",
       imposterWord: "",
@@ -825,6 +847,7 @@
     const onlineNameInput = document.getElementById("online-player-name");
     const onlineCodeInput = document.getElementById("online-room-code-input");
     const onlineMenuStatus = document.getElementById("online-menu-status");
+    const onlineLobbyError = document.getElementById("online-lobby-error");
 
     function showOnlineStatus(msg, isError = false) {
       onlineMenuStatus.textContent = msg;
@@ -832,7 +855,6 @@
       onlineMenuStatus.classList.remove("hidden");
     }
 
-    // Online Imposter Count Buttons (Host)
     const btnOnlineImp1 = document.getElementById("btn-online-imp-1");
     const btnOnlineImp2 = document.getElementById("btn-online-imp-2");
 
@@ -843,7 +865,7 @@
       }
       btnOnlineImp2.disabled = !canUseTwo;
       document.getElementById("online-imposter-lock-hint").textContent = canUseTwo
-        ? " 2 Imposters Unlocked!"
+        ? "2 Imposters Unlocked!"
         : "Requires 6+ Players for 2";
 
       btnOnlineImp1.className = onlineImposterCountSetting === 1
@@ -866,7 +888,11 @@
     });
 
     btnOnlineImp2.addEventListener("click", () => {
-      if (onlineRoomState.players.length < 6) return;
+      if (onlineRoomState.players.length < 6) {
+        Sound.error();
+        showToast("Need at least 6 players in the room to select 2 Imposters!");
+        return;
+      }
       Sound.click();
       onlineImposterCountSetting = 2;
       updateOnlineImposterSelectorUI();
@@ -876,7 +902,7 @@
       myPlayerName = onlineNameInput.value.trim() || "Host";
       isOnlineHost = true;
       currentRoomCode = String(Math.floor(1000 + Math.random() * 9000));
-      const peerId = "undercover-imposter-v25-" + currentRoomCode;
+      const peerId = "undercover-imposter-v26-" + currentRoomCode;
 
       showOnlineStatus("Creating online room...");
       if (peer) peer.destroy();
@@ -887,7 +913,7 @@
         guestConnections = [];
         onlineRoomState = {
           status: "lobby",
-          categoryName: " Desi Special",
+          categoryName: "Desi Special",
           imposterCount: 1,
           majorityWord: "",
           imposterWord: "",
@@ -896,6 +922,7 @@
           clues: []
         };
         onlineMenuStatus.classList.add("hidden");
+        onlineLobbyError.classList.add("hidden");
         Sound.reveal();
         showScreen(screenOnlineLobby);
         renderOnlineLobby();
@@ -932,7 +959,7 @@
 
       peer.on("open", (id) => {
         myPlayerId = id;
-        hostConnection = peer.connect("undercover-imposter-v25-" + code, { reliable: true });
+        hostConnection = peer.connect("undercover-imposter-v26-" + code, { reliable: true });
 
         hostConnection.on("open", () => {
           onlineMenuStatus.classList.add("hidden");
@@ -948,12 +975,12 @@
         });
 
         hostConnection.on("close", () => {
-          alert("Host closed the room.");
+          showToast("Host closed the room.");
           showScreen(screenOnlineMenu);
         });
       });
 
-      peer.on("error", () => showOnlineStatus("Room not found! Check the code.", true));
+      peer.on("error", () => showOnlineStatus("Room not found! Check the 4-digit code.", true));
     });
 
     function handleHostIncomingData(conn, data) {
@@ -962,6 +989,7 @@
         if (!onlineRoomState.players.find(p => p.id === data.id)) {
           onlineRoomState.players.push({ id: data.id, name: data.name, wins: 0, voteId: "" });
         }
+        onlineLobbyError.classList.add("hidden");
         broadcastRoomState();
       } else if (data.type === "CLUE") {
         const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -1012,7 +1040,7 @@
             <span class="w-3.5 h-3.5 rounded-full ${color.bg}"></span>
             <span class="text-sm font-bold text-white">${p.name} ${p.id === myPlayerId ? "(You)" : ""}</span>
           </div>
-          <span class="text-xs font-semibold ${idx === 0 ? "text-amber-400" : "text-slate-400"}">${idx === 0 ? " Host" : "Ready"}</span>
+          <span class="text-xs font-semibold ${idx === 0 ? "text-amber-400" : "text-slate-400"}">${idx === 0 ? "Host" : "Ready"}</span>
         `;
         list.appendChild(row);
       });
@@ -1026,8 +1054,8 @@
       Sound.click();
       navigator.clipboard?.writeText(currentRoomCode);
       const btn = document.getElementById("btn-copy-code");
-      btn.textContent = " Copied!";
-      setTimeout(() => btn.textContent = " Copy", 1500);
+      btn.textContent = "Copied!";
+      setTimeout(() => btn.textContent = "Copy Code", 1500);
     });
 
     document.getElementById("btn-leave-room").addEventListener("click", () => {
@@ -1036,7 +1064,6 @@
       showScreen(screenOnlineMenu);
     });
 
-    // Pick N unique random indices
     function pickRandomIndices(total, count) {
       const indices = Array.from({ length: total }, (_, i) => i);
       for (let i = indices.length - 1; i > 0; i--) {
@@ -1049,9 +1076,14 @@
     document.getElementById("btn-online-start").addEventListener("click", () => {
       if (onlineRoomState.players.length < 3) {
         Sound.error();
-        alert("Need at least 3 players in the lobby to start!");
+        const needed = 3 - onlineRoomState.players.length;
+        const msg = `Need at least 3 players to start! Share code ${currentRoomCode} (${needed} more needed).`;
+        onlineLobbyError.textContent = msg;
+        onlineLobbyError.classList.remove("hidden");
+        showToast(msg);
         return;
       }
+      onlineLobbyError.classList.add("hidden");
       const catKey = document.getElementById("online-category-select").value;
       const pool = getBuiltinPairs(catKey);
       const pair = pool[Math.floor(Math.random() * pool.length)];
@@ -1085,10 +1117,9 @@
       const wordEl = document.getElementById("online-my-word");
       const toggleBtn = document.getElementById("btn-toggle-online-word");
 
-      wordEl.textContent = isOnlineWordHidden ? "••••••" : mySecretWord;
-      toggleBtn.textContent = isOnlineWordHidden ? " Show Word" : " Hide Word";
+      wordEl.textContent = isOnlineWordHidden ? "******" : mySecretWord;
+      toggleBtn.textContent = isOnlineWordHidden ? "Show Word" : "Hide Word";
 
-      // Render ALL Clues in Scrollable History Box
       const cluesList = document.getElementById("online-clues-list");
       const msgCountBadge = document.getElementById("online-chat-count");
       msgCountBadge.textContent = `${onlineRoomState.clues.length} ${onlineRoomState.clues.length === 1 ? "Message" : "Messages"}`;
@@ -1110,11 +1141,9 @@
           `;
           cluesList.appendChild(item);
         });
-        // Auto-scroll to latest message at the bottom
         cluesList.scrollTop = cluesList.scrollHeight;
       }
 
-      // Render Voting Grid
       const me = onlineRoomState.players.find(p => p.id === myPlayerId);
       const myVote = me ? me.voteId : "";
       const votedCount = onlineRoomState.players.filter(p => p.voteId !== "").length;
@@ -1135,7 +1164,7 @@
             <span class="w-2.5 h-2.5 rounded-full ${color.bg} flex-shrink-0"></span>
             <span class="text-xs font-bold text-white truncate">${p.name}</span>
           </div>
-          ${p.voteId ? '<span class="text-[10px] text-emerald-400"></span>' : ""}
+          ${p.voteId ? '<span class="text-[10px] font-bold text-emerald-400">Voted</span>' : ""}
         `;
         btn.addEventListener("click", () => {
           Sound.select();
@@ -1212,11 +1241,11 @@
       if (imposterCaught) {
         Sound.victory();
         outcomeBanner.className = "p-4 rounded-2xl mb-4 border border-emerald-500/50 bg-emerald-950/40 text-center";
-        outcomeBanner.innerHTML = `<h3 class="text-xl font-bold text-emerald-300"> Citizens Win! Imposter Caught!</h3>`;
+        outcomeBanner.innerHTML = `<h3 class="text-xl font-bold text-emerald-300">Citizens Win! Imposter Caught!</h3>`;
       } else {
         Sound.defeat();
         outcomeBanner.className = "p-4 rounded-2xl mb-4 border border-rose-500/50 bg-rose-950/40 text-center";
-        outcomeBanner.innerHTML = `<h3 class="text-xl font-bold text-rose-300"> Imposter(s) Escaped & Won!</h3>`;
+        outcomeBanner.innerHTML = `<h3 class="text-xl font-bold text-rose-300">Imposter(s) Escaped & Won!</h3>`;
       }
 
       document.getElementById("result-imposter-name").textContent = impNames || "Unknown";
@@ -1242,7 +1271,7 @@
     }
 
     // =====================================================
-    // OFFLINE PASS & PLAY ENGINE (Supports 1 or 2 Imposters)
+    // OFFLINE PASS & PLAY ENGINE
     // =====================================================
     let players = [
       { name: "Player 1", wins: 0 },
@@ -1257,7 +1286,7 @@
     let currentTurnIndex = 0;
     let chosenPair = null;
     let chosenCategoryName = "";
-    let wordSourceMode = "builtin";
+    let wordSourceMode = "builtin"; // 'builtin', 'mix', 'custom'
     let customPairs = [
       { majority: "Samosa", imposter: "Kachori" },
       { majority: "Cricket", imposter: "Baseball" }
@@ -1267,6 +1296,60 @@
     let timerRemaining = 60;
     let isTimerPaused = false;
 
+    // --- Word Source Mode Buttons (FIXED!) ---
+    const btnModeBuiltin = document.getElementById("btn-mode-builtin");
+    const btnModeMix = document.getElementById("btn-mode-mix");
+    const btnModeCustom = document.getElementById("btn-mode-custom");
+    const categorySection = document.getElementById("category-section");
+    const wordModeDesc = document.getElementById("word-mode-desc");
+
+    function setWordSourceMode(mode) {
+      wordSourceMode = mode;
+      const activeClass = "py-2 px-2 text-xs font-bold rounded-lg bg-indigo-600 text-white transition text-center shadow-sm";
+      const inactiveClass = "py-2 px-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-slate-200 transition text-center";
+
+      btnModeBuiltin.className = (mode === "builtin") ? activeClass : inactiveClass;
+      btnModeMix.className = (mode === "mix") ? activeClass : inactiveClass;
+      btnModeCustom.className = (mode === "custom") ? activeClass : inactiveClass;
+
+      if (mode === "builtin") {
+        categorySection.classList.remove("hidden");
+        wordModeDesc.textContent = "Using built-in category words.";
+      } else if (mode === "mix") {
+        categorySection.classList.remove("hidden");
+        wordModeDesc.textContent = "Mixing built-in category words + your custom pairs.";
+      } else {
+        categorySection.classList.add("hidden");
+        wordModeDesc.textContent = "Using ONLY your custom word pairs below.";
+      }
+    }
+
+    btnModeBuiltin.addEventListener("click", () => {
+      Sound.click();
+      setWordSourceMode("builtin");
+    });
+    btnModeMix.addEventListener("click", () => {
+      Sound.click();
+      setWordSourceMode("mix");
+    });
+    btnModeCustom.addEventListener("click", () => {
+      Sound.click();
+      setWordSourceMode("custom");
+    });
+
+    // Custom Word Form Toggle (FIXED!)
+    let isCustomFormOpen = true;
+    const btnToggleCustomForm = document.getElementById("btn-toggle-custom-form");
+    const customWordForm = document.getElementById("custom-word-form");
+
+    btnToggleCustomForm.addEventListener("click", () => {
+      Sound.click();
+      isCustomFormOpen = !isCustomFormOpen;
+      customWordForm.classList.toggle("hidden", !isCustomFormOpen);
+      btnToggleCustomForm.textContent = isCustomFormOpen ? "- Close" : "+ Add Pair";
+    });
+
+    // Offline Imposter Count UI
     const btnOfflineImp1 = document.getElementById("btn-offline-imp-1");
     const btnOfflineImp2 = document.getElementById("btn-offline-imp-2");
     const offlineImpHint = document.getElementById("offline-imposter-hint");
@@ -1278,8 +1361,8 @@
       }
       btnOfflineImp2.disabled = !canHaveTwo;
       offlineImpHint.textContent = canHaveTwo
-        ? " 6+ Players: Choose 1 or 2 Imposters!"
-        : "Add 6–8 players to unlock 2 Imposters";
+        ? "6+ Players: Choose 1 or 2 Imposters!"
+        : "Add 6 to 8 players to unlock 2 Imposters";
 
       btnOfflineImp1.className = (offlineImposterCount === 1)
         ? "py-2 px-3 rounded-lg text-xs font-bold bg-indigo-600 text-white shadow transition"
@@ -1301,7 +1384,11 @@
     });
 
     btnOfflineImp2.addEventListener("click", () => {
-      if (players.length < 6) return;
+      if (players.length < 6) {
+        Sound.error();
+        showToast("Add at least 6 players to unlock 2 Imposters!");
+        return;
+      }
       Sound.click();
       offlineImposterCount = 2;
       updateOfflineImposterCountUI();
@@ -1328,8 +1415,8 @@
         if (players.length > 3) {
           const del = document.createElement("button");
           del.type = "button";
-          del.className = "p-2 text-slate-400 hover:text-rose-400";
-          del.textContent = "";
+          del.className = "px-2.5 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-rose-400 text-xs font-bold";
+          del.textContent = "X";
           del.addEventListener("click", () => {
             Sound.click();
             players.splice(index, 1);
@@ -1363,6 +1450,8 @@
         Sound.click();
         players.push({ name: `Player ${players.length + 1}`, wins: 0 });
         renderPlayerInputs();
+      } else {
+        showToast("Maximum 8 players allowed!");
       }
     });
 
@@ -1373,7 +1462,6 @@
       renderScoreboards();
     });
 
-    // Custom Words
     function renderCustomPairsList() {
       document.getElementById("custom-words-badge").textContent = `${customPairs.length} Pairs`;
       const container = document.getElementById("custom-pairs-container");
@@ -1381,7 +1469,7 @@
       customPairs.forEach((pair, index) => {
         const chip = document.createElement("div");
         chip.className = "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800 text-slate-200 border border-slate-700 text-xs";
-        chip.innerHTML = `<span><strong class="text-emerald-400">${pair.majority}</strong> / <strong class="text-rose-400">${pair.imposter}</strong></span><button type="button" class="text-slate-400 hover:text-rose-400 ml-1"></button>`;
+        chip.innerHTML = `<span><strong class="text-emerald-400">${pair.majority}</strong> / <strong class="text-rose-400">${pair.imposter}</strong></span><button type="button" class="text-slate-400 hover:text-rose-400 ml-1 font-bold">x</button>`;
         chip.querySelector("button").addEventListener("click", () => {
           Sound.click();
           customPairs.splice(index, 1);
@@ -1394,10 +1482,14 @@
     document.getElementById("btn-add-custom-pair").addEventListener("click", () => {
       const maj = document.getElementById("input-custom-majority").value.trim();
       const imp = document.getElementById("input-custom-imposter").value.trim();
+      const errEl = document.getElementById("custom-word-error");
       if (!maj || !imp || maj.toLowerCase() === imp.toLowerCase()) {
         Sound.error();
+        errEl.textContent = "Please enter two different words!";
+        errEl.classList.remove("hidden");
         return;
       }
+      errEl.classList.add("hidden");
       customPairs.push({ majority: maj, imposter: imp });
       document.getElementById("input-custom-majority").value = "";
       document.getElementById("input-custom-imposter").value = "";
@@ -1407,12 +1499,26 @@
 
     document.getElementById("btn-start-game").addEventListener("click", () => {
       const catKey = document.getElementById("category-select").value;
-      const pool = (wordSourceMode === "custom") ? customPairs : getBuiltinPairs(catKey);
-      if (pool.length === 0) return;
-      Sound.click();
+      let pool = [];
 
+      if (wordSourceMode === "custom") {
+        if (customPairs.length === 0) {
+          Sound.error();
+          showToast("Please add at least 1 Custom Word Pair first!");
+          return;
+        }
+        pool = customPairs;
+        chosenCategoryName = "CUSTOM WORDS";
+      } else if (wordSourceMode === "mix") {
+        pool = [...getBuiltinPairs(catKey), ...customPairs];
+        chosenCategoryName = catKey.toUpperCase() + " + CUSTOM";
+      } else {
+        pool = getBuiltinPairs(catKey);
+        chosenCategoryName = catKey.toUpperCase();
+      }
+
+      Sound.click();
       chosenPair = pool[Math.floor(Math.random() * pool.length)];
-      chosenCategoryName = catKey.toUpperCase();
       const activeImpCount = (players.length >= 6) ? offlineImposterCount : 1;
       imposterIndices = pickRandomIndices(players.length, activeImpCount);
       selectedVoteIndices = [];
@@ -1487,7 +1593,7 @@
 
     document.getElementById("btn-timer-toggle").addEventListener("click", () => {
       isTimerPaused = !isTimerPaused;
-      document.getElementById("timer-toggle-text").textContent = isTimerPaused ? " Resume" : " Pause";
+      document.getElementById("timer-toggle-text").textContent = isTimerPaused ? "Resume" : "Pause";
     });
 
     document.getElementById("btn-timer-add30").addEventListener("click", () => {
@@ -1534,7 +1640,7 @@
     document.getElementById("btn-show-reveal").addEventListener("click", () => {
       if (selectedVoteIndices.length < imposterIndices.length) {
         Sound.error();
-        alert(`Please select ${imposterIndices.length} suspect(s)!`);
+        showToast(`Please select ${imposterIndices.length} suspect(s) before revealing!`);
         return;
       }
       totalRoundsPlayed++;
@@ -1546,12 +1652,12 @@
         players.forEach((p, i) => { if (!imposterIndices.includes(i)) p.wins++; });
         Sound.victory();
         outcomeBanner.className = "p-4 rounded-2xl mb-4 border border-emerald-500/50 bg-emerald-950/40 text-center";
-        outcomeBanner.innerHTML = `<h3 class="text-xl font-bold text-emerald-300"> Citizens Win! Imposter(s) Caught!</h3>`;
+        outcomeBanner.innerHTML = `<h3 class="text-xl font-bold text-emerald-300">Citizens Win! Imposter(s) Caught!</h3>`;
       } else {
         imposterIndices.forEach(i => players[i].wins++);
         Sound.defeat();
         outcomeBanner.className = "p-4 rounded-2xl mb-4 border border-rose-500/50 bg-rose-950/40 text-center";
-        outcomeBanner.innerHTML = `<h3 class="text-xl font-bold text-rose-300"> Imposter(s) Won!</h3>`;
+        outcomeBanner.innerHTML = `<h3 class="text-xl font-bold text-rose-300">Imposter(s) Won!</h3>`;
       }
 
       document.getElementById("result-imposter-name").textContent = imposterNames;
