@@ -1,0 +1,1331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Imposter Word Game</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .card-flip { transition: transform 0.4s ease; }
+    .timer-progress { transition: width 1s linear; }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between p-4 sm:p-6">
+  <div class="max-w-md w-full mx-auto my-auto relative">
+    <!-- Top Action Bar (Scoreboard Quick View & Sound Toggle) -->
+    <div class="flex items-center justify-between mb-3">
+      <div id="session-rounds-badge" class="text-xs bg-slate-800 text-slate-300 font-semibold px-2.5 py-1 rounded-xl border border-slate-700/80 flex items-center gap-1.5 shadow-sm">
+        <span>🎮 Round <strong id="rounds-count-text" class="text-indigo-400 font-bold">0</strong></span>
+      </div>
+      <button id="btn-sound-toggle" type="button" class="py-1 px-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/80 text-xs font-medium transition flex items-center gap-1.5 shadow-sm" title="Toggle Sound">
+        <span id="sound-icon">🔊</span>
+        <span id="sound-label">Sound On</span>
+      </button>
+    </div>
+
+    <!-- Header -->
+    <header class="text-center mb-5">
+      <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-600/30 text-indigo-400 mb-2 border border-indigo-500/30 shadow-lg shadow-indigo-500/10">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        </svg>
+      </div>
+      <h1 class="text-3xl font-extrabold tracking-tight text-white">Undercover Imposter</h1>
+      <p class="text-slate-400 text-sm mt-0.5">Pass & Play Social Deduction Game</p>
+    </header>
+
+    <!-- Screen 1: Game Setup -->
+    <section id="screen-setup" class="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-5 sm:p-6 shadow-xl backdrop-blur-sm">
+      <h2 class="text-lg font-semibold text-slate-200 mb-3 flex items-center justify-between">
+        <span>Players (3 to 8)</span>
+        <span id="player-count-badge" class="text-xs bg-indigo-500/20 text-indigo-300 font-medium px-2.5 py-1 rounded-full border border-indigo-500/30">4 Players</span>
+      </h2>
+
+      <!-- Player List with Assigned Colors -->
+      <div id="player-inputs" class="space-y-2 mb-3.5 max-h-56 overflow-y-auto pr-1">
+        <!-- Rendered by JavaScript -->
+      </div>
+
+      <div class="flex gap-2 mb-4">
+        <button id="btn-add-player" type="button" class="flex-1 py-2 px-3 text-sm font-medium rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition flex items-center justify-center gap-1.5">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          Add Player
+        </button>
+      </div>
+
+      <!-- Word Source Mode Selector (Built-in, Mix, Custom) -->
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-slate-300 mb-1.5">Word Source Mode</label>
+        <div class="grid grid-cols-3 gap-1.5 p-1 bg-slate-900 border border-slate-700 rounded-xl">
+          <button type="button" id="btn-mode-builtin" class="py-1.5 px-2 text-xs font-semibold rounded-lg bg-indigo-600 text-white transition text-center shadow-sm">
+            📚 Built-in
+          </button>
+          <button type="button" id="btn-mode-mix" class="py-1.5 px-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-slate-200 transition text-center">
+            🎲 Mix Both
+          </button>
+          <button type="button" id="btn-mode-custom" class="py-1.5 px-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-slate-200 transition text-center">
+            ✏️ Custom Only
+          </button>
+        </div>
+      </div>
+
+      <!-- Category Selection (Visible in Built-in & Mix modes) -->
+      <div id="category-section" class="mb-4">
+        <label for="category-select" class="block text-sm font-medium text-slate-300 mb-1.5">Word Category</label>
+        <select id="category-select" class="w-full bg-slate-900 border border-slate-700 text-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <option value="all">🎲 All Categories (Mixed)</option>
+          <option value="desi" selected>🇮🇳 Desi / Indian Special</option>
+          <option value="bollywood">🎬 Bollywood & Movies</option>
+          <option value="cricket">🏏 Cricket & Sports</option>
+          <option value="food">🍲 Food & Drinks</option>
+          <option value="places">🌍 Places & Cities</option>
+          <option value="objects">📱 Everyday Objects & Games</option>
+          <option value="fruits">🍎 Fruits & Vegetables</option>
+          <option value="people">⭐ Famous People</option>
+        </select>
+      </div>
+
+      <!-- Custom Word Creator Card -->
+      <div class="bg-slate-900/80 border border-slate-700/80 rounded-xl p-3.5 mb-4">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-1.5">
+            <span class="text-amber-400">✏️</span>
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-300">Custom Word Creator</span>
+            <span id="custom-words-badge" class="text-[10px] bg-slate-800 text-indigo-300 font-bold px-2 py-0.5 rounded-full border border-slate-700">0 Pairs</span>
+          </div>
+          <button id="btn-toggle-custom-form" type="button" class="text-xs text-indigo-400 hover:text-indigo-300 font-semibold transition">
+            + Add Pair
+          </button>
+        </div>
+
+        <!-- Custom Word Input Form -->
+        <div id="custom-word-form" class="space-y-2 mt-2 pt-2 border-t border-slate-800">
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label for="input-custom-majority" class="block text-[11px] text-slate-400 mb-1">Citizens' Word</label>
+              <input type="text" id="input-custom-majority" placeholder="e.g. Samosa" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+            </div>
+            <div>
+              <label for="input-custom-imposter" class="block text-[11px] text-slate-400 mb-1">Imposter's Word</label>
+              <input type="text" id="input-custom-imposter" placeholder="e.g. Kachori" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+            </div>
+          </div>
+          <button id="btn-add-custom-pair" type="button" class="w-full py-2 px-3 rounded-lg bg-indigo-600/80 hover:bg-indigo-600 text-white font-semibold text-xs transition flex items-center justify-center gap-1.5 shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Save Custom Pair
+          </button>
+          <p id="custom-word-error" class="hidden text-[11px] text-rose-400 font-medium"></p>
+        </div>
+
+        <!-- Custom Pairs Chip List -->
+        <div id="custom-pairs-container" class="mt-2.5 flex flex-wrap gap-1.5 max-h-28 overflow-y-auto pr-1">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Discussion Duration Setting -->
+      <div class="mb-4">
+        <label for="timer-select" class="block text-sm font-medium text-slate-300 mb-1.5">Discussion Timer</label>
+        <select id="timer-select" class="w-full bg-slate-900 border border-slate-700 text-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <option value="60">⏱️ 60 Seconds (Recommended)</option>
+          <option value="90">⏱️ 90 Seconds</option>
+          <option value="120">⏱️ 2 Minutes</option>
+          <option value="0">⏳ Unlimited (No Timer)</option>
+        </select>
+      </div>
+
+      <!-- Session Leaderboard Card -->
+      <div class="bg-slate-900/80 border border-slate-700/80 rounded-xl p-3.5 mb-5">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-1.5">
+            <span class="text-amber-400">🏆</span>
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-300">Session Scoreboard</span>
+          </div>
+          <button id="btn-reset-scores" type="button" class="text-[11px] text-slate-400 hover:text-rose-400 transition underline">
+            Reset Scores
+          </button>
+        </div>
+        <div id="setup-scoreboard-list" class="space-y-1.5 text-xs">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Start Button -->
+      <button id="btn-start-game" type="button" class="w-full py-3.5 px-4 rounded-xl font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30 transition transform active:scale-[0.99] flex items-center justify-center gap-2">
+        <span>Start Game</span>
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+        </svg>
+      </button>
+    </section>
+
+    <!-- Screen 2: Pass & Play Word Reveal -->
+    <section id="screen-pass" class="hidden bg-slate-800/90 border border-slate-700/80 rounded-2xl p-6 shadow-xl text-center">
+      <div class="mb-4">
+        <span class="text-xs uppercase tracking-wider text-indigo-400 font-bold" id="pass-step-indicator">Turn 1 of 4</span>
+        <div class="flex items-center justify-center gap-2 mt-1">
+          <span id="pass-player-badge" class="w-4 h-4 rounded-full flex-shrink-0"></span>
+          <h2 class="text-2xl font-bold text-white" id="pass-player-name">Pass to Alice</h2>
+        </div>
+        <p class="text-sm text-slate-400 mt-1">Make sure nobody else is looking at the screen!</p>
+      </div>
+
+      <!-- Hidden Card State -->
+      <div id="card-hidden" class="my-6 p-8 bg-slate-900/80 border-2 border-dashed border-slate-700 rounded-2xl flex flex-col items-center justify-center">
+        <div class="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 mb-3">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+          </svg>
+        </div>
+        <p class="text-slate-300 font-medium">Ready to see your secret word?</p>
+        <button id="btn-reveal-word" type="button" class="mt-4 px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow transition">
+          Tap to Reveal Word
+        </button>
+      </div>
+
+      <!-- Revealed Card State -->
+      <div id="card-revealed" class="hidden my-6 p-6 bg-gradient-to-b from-indigo-950/60 to-slate-900 border border-indigo-500/40 rounded-2xl flex flex-col items-center justify-center">
+        <span class="text-xs uppercase tracking-wider text-indigo-300 font-bold bg-indigo-900/60 px-3 py-1 rounded-full border border-indigo-500/30 mb-2" id="revealed-category">Category: Fruits</span>
+        <span class="text-slate-400 text-xs">Your Secret Word is:</span>
+        <div class="text-3xl font-extrabold text-amber-300 tracking-wide my-3" id="revealed-word">Apple</div>
+        <p class="text-xs text-slate-400 max-w-xs">Memorize this word! If you are the imposter, your word is slightly different from the majority.</p>
+        <button id="btn-hide-pass" type="button" class="mt-5 w-full py-3 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-semibold transition border border-slate-600">
+          Hide & Pass to Next Player
+        </button>
+      </div>
+    </section>
+
+    <!-- Screen 3: Discussion & Real-World Voting -->
+    <section id="screen-discuss" class="hidden bg-slate-800/90 border border-slate-700/80 rounded-2xl p-6 shadow-xl text-center">
+      <!-- Discussion Timer Banner -->
+      <div id="timer-container" class="bg-slate-900/90 border border-slate-700 rounded-2xl p-4 mb-4">
+        <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
+          <span class="font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
+            <span>⏱️</span> Discussion Clock
+          </span>
+          <span id="timer-status-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Active</span>
+        </div>
+        
+        <div class="flex items-center justify-center gap-3 my-2">
+          <div id="timer-display" class="text-4xl font-extrabold font-mono tracking-wider text-white">01:00</div>
+        </div>
+
+        <!-- Timer progress bar -->
+        <div class="w-full bg-slate-800 rounded-full h-2 mb-3 overflow-hidden border border-slate-700/60">
+          <div id="timer-bar" class="bg-indigo-500 h-2 rounded-full timer-progress" style="width: 100%;"></div>
+        </div>
+
+        <div class="flex gap-2 justify-center">
+          <button id="btn-timer-toggle" type="button" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition flex items-center gap-1">
+            <span id="timer-toggle-icon">⏸️</span>
+            <span id="timer-toggle-text">Pause</span>
+          </button>
+          <button id="btn-timer-add30" type="button" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition flex items-center gap-1">
+            <span>➕</span> 30s
+          </button>
+        </div>
+
+        <div id="timer-alert-box" class="hidden mt-2.5 p-2 rounded-xl bg-rose-950/60 border border-rose-500/40 text-xs font-bold text-rose-300 animate-pulse">
+          ⏰ Time's Up! Cast your vote below now!
+        </div>
+      </div>
+
+      <h2 class="text-xl font-bold text-white mb-1">Discussion & Vote</h2>
+      <p class="text-slate-300 text-xs mb-3">Discuss clues in real life, then cast the group vote:</p>
+
+      <!-- Step Guide -->
+      <div class="text-left bg-slate-900/70 rounded-xl p-3 mb-4 border border-slate-700/60 space-y-1.5">
+        <div class="flex items-start gap-2">
+          <div class="w-5 h-5 rounded-full bg-indigo-600 text-white text-[11px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">1</div>
+          <p class="text-xs text-slate-300"><strong class="text-white">Give 1-word clues:</strong> Everyone gives one clue about their secret word.</p>
+        </div>
+        <div class="flex items-start gap-2">
+          <div class="w-5 h-5 rounded-full bg-indigo-600 text-white text-[11px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">2</div>
+          <p class="text-xs text-slate-300"><strong class="text-white">Debate:</strong> Identify whose clue sounds slightly different.</p>
+        </div>
+      </div>
+
+      <!-- Voting Box with Colored Player Buttons -->
+      <div class="bg-slate-900/90 border border-slate-700 rounded-xl p-4 my-4 text-left">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-bold uppercase tracking-wider text-amber-400">Vote for the Imposter</span>
+          <span id="vote-selection-hint" class="text-xs text-slate-400">Select 1 player below</span>
+        </div>
+        <div id="voting-players-grid" class="grid grid-cols-2 gap-2 mt-2">
+          <!-- Populated dynamically by JS -->
+        </div>
+      </div>
+
+      <button id="btn-show-reveal" type="button" class="w-full py-3.5 px-4 rounded-xl font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-lg shadow-amber-500/20 transition flex items-center justify-center gap-2">
+        <span id="reveal-btn-text">Reveal Secret Roles & Words</span>
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+      </button>
+    </section>
+
+    <!-- Screen 4: Results & Winner -->
+    <section id="screen-result" class="hidden bg-slate-800/90 border border-slate-700/80 rounded-2xl p-6 shadow-xl text-center">
+      <!-- Outcome Banner (Citizens Win vs Imposter Wins) -->
+      <div id="outcome-banner" class="p-4 rounded-2xl mb-4 border text-center">
+        <!-- Injected by JS -->
+      </div>
+
+      <div class="w-16 h-16 mx-auto rounded-full bg-rose-500/20 text-rose-400 mb-2 border border-rose-500/30 flex items-center justify-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-9 h-9" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+      </div>
+
+      <span class="text-xs uppercase tracking-wider text-rose-400 font-bold">The Actual Imposter Was</span>
+      <h2 class="text-3xl font-extrabold text-white mt-1 mb-4 flex items-center justify-center gap-2">
+        <span id="result-imposter-color-dot" class="w-4 h-4 rounded-full flex-shrink-0"></span>
+        <span id="result-imposter-name">Charlie</span>
+      </h2>
+
+      <div class="grid grid-cols-2 gap-3 mb-4">
+        <div class="bg-slate-900/80 p-3.5 rounded-xl border border-slate-700 text-left">
+          <span class="text-[11px] uppercase tracking-wider text-emerald-400 font-semibold block">Citizens' Word</span>
+          <span class="text-lg font-bold text-white block mt-1" id="result-majority-word">Apple</span>
+        </div>
+        <div class="bg-slate-900/80 p-3.5 rounded-xl border border-slate-700 text-left">
+          <span class="text-[11px] uppercase tracking-wider text-rose-400 font-semibold block">Imposter's Word</span>
+          <span class="text-lg font-bold text-rose-300 block mt-1" id="result-imposter-word">Pear</span>
+        </div>
+      </div>
+
+      <!-- Player breakdown with colors -->
+      <div class="bg-slate-900/50 rounded-xl p-3 mb-4 border border-slate-700/60 text-left">
+        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Round Roles & Outcome</span>
+        <div id="result-players-list" class="space-y-1.5 text-sm">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Updated Scoreboard Card -->
+      <div class="bg-slate-900/80 border border-slate-700/80 rounded-xl p-3.5 mb-5 text-left">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-bold uppercase tracking-wider text-amber-400">🏆 Updated Standings</span>
+          <span class="text-xs text-slate-400">Total Wins</span>
+        </div>
+        <div id="result-scoreboard-list" class="space-y-1.5 text-xs">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <button id="btn-play-again" type="button" class="w-full py-3.5 px-4 rounded-xl font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30 transition flex items-center justify-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+        <span>Play Next Round</span>
+      </button>
+    </section>
+  </div>
+
+  <footer class="text-center text-xs text-slate-500 py-3 mt-4">
+    Undercover Imposter • Version 1.6 (Desi Indian Edition)
+  </footer>
+
+  <script>
+    // --- Distinct Colors Assigned Per Player Slot ---
+    const PLAYER_COLORS = [
+      { name: "Blue", bg: "bg-blue-500", text: "text-blue-400", border: "border-blue-500", bgLight: "bg-blue-500/20" },
+      { name: "Emerald", bg: "bg-emerald-500", text: "text-emerald-400", border: "border-emerald-500", bgLight: "bg-emerald-500/20" },
+      { name: "Amber", bg: "bg-amber-500", text: "text-amber-400", border: "border-amber-500", bgLight: "bg-amber-500/20" },
+      { name: "Rose", bg: "bg-rose-500", text: "text-rose-400", border: "border-rose-500", bgLight: "bg-rose-500/20" },
+      { name: "Purple", bg: "bg-purple-500", text: "text-purple-400", border: "border-purple-500", bgLight: "bg-purple-500/20" },
+      { name: "Cyan", bg: "bg-cyan-500", text: "text-cyan-400", border: "border-cyan-500", bgLight: "bg-cyan-500/20" },
+      { name: "Orange", bg: "bg-orange-500", text: "text-orange-400", border: "border-orange-500", bgLight: "bg-orange-500/20" },
+      { name: "Pink", bg: "bg-pink-500", text: "text-pink-400", border: "border-pink-500", bgLight: "bg-pink-500/20" }
+    ];
+
+    // --- Synthesized Sound Effects Engine (Web Audio API) ---
+    let audioCtx = null;
+    let isMuted = false;
+
+    function initAudio() {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) {
+          audioCtx = new AudioContext();
+        }
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    const Sound = {
+      playTone(freq, type, duration, gainStart = 0.15, gainEnd = 0.001) {
+        if (isMuted) return;
+        initAudio();
+        if (!audioCtx) return;
+        try {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+          gain.gain.setValueAtTime(gainStart, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(gainEnd, audioCtx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start();
+          osc.stop(audioCtx.currentTime + duration);
+        } catch (e) {}
+      },
+
+      click() {
+        if (isMuted) return;
+        initAudio();
+        if (!audioCtx) return;
+        try {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(750, audioCtx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(320, audioCtx.currentTime + 0.04);
+          gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.04);
+        } catch (e) {}
+      },
+
+      select() {
+        if (isMuted) return;
+        initAudio();
+        if (!audioCtx) return;
+        try {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(500, audioCtx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(950, audioCtx.currentTime + 0.07);
+          gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.07);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.07);
+        } catch (e) {}
+      },
+
+      reveal() {
+        if (isMuted) return;
+        const notes = [523.25, 659.25, 783.99]; // C5, E5, G5
+        notes.forEach((freq, i) => {
+          setTimeout(() => {
+            Sound.playTone(freq, 'sine', 0.22, 0.14, 0.001);
+          }, i * 65);
+        });
+      },
+
+      pass() {
+        if (isMuted) return;
+        initAudio();
+        if (!audioCtx) return;
+        try {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(380, audioCtx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(640, audioCtx.currentTime + 0.09);
+          gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.09);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.09);
+        } catch (e) {}
+      },
+
+      tick(urgent = false) {
+        if (isMuted) return;
+        initAudio();
+        if (!audioCtx) return;
+        const freq = urgent ? 1200 : 800;
+        const vol = urgent ? 0.18 : 0.08;
+        Sound.playTone(freq, 'sine', 0.03, vol, 0.001);
+      },
+
+      timesUp() {
+        if (isMuted) return;
+        Sound.playTone(880, 'sawtooth', 0.2, 0.2, 0.001);
+        setTimeout(() => {
+          Sound.playTone(587.33, 'sawtooth', 0.4, 0.25, 0.001);
+        }, 180);
+      },
+
+      error() {
+        if (isMuted) return;
+        Sound.playTone(220, 'sawtooth', 0.12, 0.12, 0.001);
+      },
+
+      victory() {
+        if (isMuted) return;
+        const fanfare = [
+          { freq: 523.25, time: 0, dur: 0.12 },
+          { freq: 659.25, time: 100, dur: 0.12 },
+          { freq: 783.99, time: 200, dur: 0.16 },
+          { freq: 1046.50, time: 320, dur: 0.55 }
+        ];
+        fanfare.forEach(note => {
+          setTimeout(() => {
+            Sound.playTone(note.freq, 'triangle', note.dur, 0.22, 0.001);
+          }, note.time);
+        });
+      },
+
+      defeat() {
+        if (isMuted) return;
+        const notes = [
+          { freq: 440.00, time: 0, dur: 0.22 },
+          { freq: 415.30, time: 170, dur: 0.22 },
+          { freq: 369.99, time: 340, dur: 0.5 }
+        ];
+        notes.forEach(note => {
+          setTimeout(() => {
+            Sound.playTone(note.freq, 'sawtooth', note.dur, 0.16, 0.001);
+          }, note.time);
+        });
+      }
+    };
+
+    // Sound Toggle Setup
+    const btnSoundToggle = document.getElementById("btn-sound-toggle");
+    const soundIcon = document.getElementById("sound-icon");
+    const soundLabel = document.getElementById("sound-label");
+
+    btnSoundToggle.addEventListener("click", () => {
+      isMuted = !isMuted;
+      if (isMuted) {
+        soundIcon.textContent = "🔇";
+        soundLabel.textContent = "Muted";
+        btnSoundToggle.classList.add("text-slate-500");
+      } else {
+        soundIcon.textContent = "🔊";
+        soundLabel.textContent = "Sound On";
+        btnSoundToggle.classList.remove("text-slate-500");
+        Sound.click();
+      }
+    });
+
+    // --- Built-in Word Database (Enriched with Indian Touch) ---
+    const WORD_PAIRS = {
+      desi: [
+        { majority: "Biryani", imposter: "Pulao" },
+        { majority: "Pani Puri", imposter: "Dahi Puri" },
+        { majority: "Chole Bhature", imposter: "Pav Bhaji" },
+        { majority: "Idli", imposter: "Dosa" },
+        { majority: "Gulab Jamun", imposter: "Rasgulla" },
+        { majority: "Jalebi", imposter: "Imarti" },
+        { majority: "Chai", imposter: "Filter Coffee" },
+        { majority: "Samosa", imposter: "Kachori" },
+        { majority: "Shah Rukh Khan", imposter: "Salman Khan" },
+        { majority: "Bahubali", imposter: "KGF" },
+        { majority: "Sholay", imposter: "Bhoothnath" },
+        { majority: "Hera Pheri", imposter: "Golmaal" },
+        { majority: "3 Idiots", imposter: "Chhichhore" },
+        { majority: "Virat Kohli", imposter: "Rohit Sharma" },
+        { majority: "MS Dhoni", imposter: "Kapil Dev" },
+        { majority: "IPL", imposter: "World Cup" },
+        { majority: "Cricket", imposter: "Baseball" },
+        { majority: "Table Tennis", imposter: "Badminton" },
+        { majority: "Kabaddi", imposter: "Kho-Kho" },
+        { majority: "Mumbai", imposter: "Delhi" },
+        { majority: "Jaipur", imposter: "Udaipur" },
+        { majority: "Uttar Pradesh", imposter: "Rajasthan" },
+        { majority: "Shimla", imposter: "Manali" },
+        { majority: "Bangalore", imposter: "Hyderabad" },
+        { majority: "Metro", imposter: "Local Train" },
+        { majority: "Ludo", imposter: "Carrom" },
+        { majority: "Google Pay", imposter: "PhonePe" },
+        { majority: "Kurkure", imposter: "Tedhe Medhe" }
+      ],
+      bollywood: [
+        { majority: "Shah Rukh Khan", imposter: "Salman Khan" },
+        { majority: "Bahubali", imposter: "KGF" },
+        { majority: "Sholay", imposter: "Bhoothnath" },
+        { majority: "Hera Pheri", imposter: "Golmaal" },
+        { majority: "3 Idiots", imposter: "Chhichhore" },
+        { majority: "Batman", imposter: "Spider-Man" }
+      ],
+      cricket: [
+        { majority: "Virat Kohli", imposter: "Rohit Sharma" },
+        { majority: "MS Dhoni", imposter: "Kapil Dev" },
+        { majority: "IPL", imposter: "World Cup" },
+        { majority: "Cricket", imposter: "Baseball" },
+        { majority: "Table Tennis", imposter: "Badminton" },
+        { majority: "Kabaddi", imposter: "Kho-Kho" },
+        { majority: "Lionel Messi", imposter: "Cristiano Ronaldo" }
+      ],
+      food: [
+        { majority: "Biryani", imposter: "Pulao" },
+        { majority: "Pani Puri", imposter: "Dahi Puri" },
+        { majority: "Chole Bhature", imposter: "Pav Bhaji" },
+        { majority: "Idli", imposter: "Dosa" },
+        { majority: "Gulab Jamun", imposter: "Rasgulla" },
+        { majority: "Jalebi", imposter: "Imarti" },
+        { majority: "Chai", imposter: "Filter Coffee" },
+        { majority: "Samosa", imposter: "Kachori" },
+        { majority: "Pizza", imposter: "Burger" },
+        { majority: "Coffee", imposter: "Tea" },
+        { majority: "Ice Cream", imposter: "Frozen Yogurt" },
+        { majority: "Pancake", imposter: "Waffle" },
+        { majority: "Taco", imposter: "Burrito" }
+      ],
+      places: [
+        { majority: "Mumbai", imposter: "Delhi" },
+        { majority: "Jaipur", imposter: "Udaipur" },
+        { majority: "Uttar Pradesh", imposter: "Rajasthan" },
+        { majority: "Shimla", imposter: "Manali" },
+        { majority: "Bangalore", imposter: "Hyderabad" },
+        { majority: "Paris", imposter: "Rome" },
+        { majority: "Tokyo", imposter: "Seoul" },
+        { majority: "New York", imposter: "London" },
+        { majority: "Beach", imposter: "Lake" },
+        { majority: "Desert", imposter: "Canyon" },
+        { majority: "Library", imposter: "Bookstore" }
+      ],
+      objects: [
+        { majority: "Metro", imposter: "Local Train" },
+        { majority: "Ludo", imposter: "Carrom" },
+        { majority: "Google Pay", imposter: "PhonePe" },
+        { majority: "Kurkure", imposter: "Tedhe Medhe" },
+        { majority: "Smartphone", imposter: "Tablet" },
+        { majority: "Laptop", imposter: "Desktop PC" },
+        { majority: "Backpack", imposter: "Suitcase" },
+        { majority: "Headphones", imposter: "Earbuds" },
+        { majority: "Watch", imposter: "Clock" }
+      ],
+      fruits: [
+        { majority: "Apple", imposter: "Pear" },
+        { majority: "Banana", imposter: "Mango" },
+        { majority: "Strawberry", imposter: "Raspberry" },
+        { majority: "Potato", imposter: "Sweet Potato" },
+        { majority: "Lemon", imposter: "Lime" },
+        { majority: "Carrot", imposter: "Radish" }
+      ],
+      people: [
+        { majority: "Shah Rukh Khan", imposter: "Salman Khan" },
+        { majority: "Virat Kohli", imposter: "Rohit Sharma" },
+        { majority: "MS Dhoni", imposter: "Kapil Dev" },
+        { majority: "Batman", imposter: "Spider-Man" },
+        { majority: "Lionel Messi", imposter: "Cristiano Ronaldo" },
+        { majority: "Einstein", imposter: "Newton" },
+        { majority: "Sherlock Holmes", imposter: "Hercule Poirot" },
+        { majority: "Harry Potter", imposter: "Percy Jackson" }
+      ]
+    };
+
+    // --- State Variables ---
+    let players = [
+      { name: "Player 1", wins: 0 },
+      { name: "Player 2", wins: 0 },
+      { name: "Player 3", wins: 0 },
+      { name: "Player 4", wins: 0 }
+    ];
+    let totalRoundsPlayed = 0;
+    let currentTurnIndex = 0;
+    let imposterIndex = -1;
+    let chosenPair = null;
+    let chosenCategoryName = "";
+    let votedPlayerIndex = -1;
+
+    // Word Source Mode: 'builtin', 'mix', 'custom'
+    let wordSourceMode = "builtin";
+    let customPairs = [
+      { majority: "Samosa", imposter: "Kachori" },
+      { majority: "Cricket", imposter: "Baseball" }
+    ];
+
+    // Load custom pairs from localStorage safely
+    try {
+      const saved = localStorage.getItem("imposter_custom_pairs");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          customPairs = parsed;
+        }
+      }
+    } catch (e) {}
+
+    // Timer state
+    let timerDuration = 60;
+    let timerRemaining = 60;
+    let timerInterval = null;
+    let isTimerPaused = false;
+
+    // --- DOM Elements ---
+    const screenSetup = document.getElementById("screen-setup");
+    const screenPass = document.getElementById("screen-pass");
+    const screenDiscuss = document.getElementById("screen-discuss");
+    const screenResult = document.getElementById("screen-result");
+
+    const playerInputsContainer = document.getElementById("player-inputs");
+    const playerCountBadge = document.getElementById("player-count-badge");
+    const btnAddPlayer = document.getElementById("btn-add-player");
+    
+    // Word source buttons
+    const btnModeBuiltin = document.getElementById("btn-mode-builtin");
+    const btnModeMix = document.getElementById("btn-mode-mix");
+    const btnModeCustom = document.getElementById("btn-mode-custom");
+    const categorySection = document.getElementById("category-section");
+    const categorySelect = document.getElementById("category-select");
+
+    // Custom word creator elements
+    const customWordsBadge = document.getElementById("custom-words-badge");
+    const btnToggleCustomForm = document.getElementById("btn-toggle-custom-form");
+    const customWordForm = document.getElementById("custom-word-form");
+    const inputCustomMajority = document.getElementById("input-custom-majority");
+    const inputCustomImposter = document.getElementById("input-custom-imposter");
+    const btnAddCustomPair = document.getElementById("btn-add-custom-pair");
+    const customWordError = document.getElementById("custom-word-error");
+    const customPairsContainer = document.getElementById("custom-pairs-container");
+
+    const timerSelect = document.getElementById("timer-select");
+    const btnStartGame = document.getElementById("btn-start-game");
+    const roundsCountText = document.getElementById("rounds-count-text");
+    const setupScoreboardList = document.getElementById("setup-scoreboard-list");
+    const btnResetScores = document.getElementById("btn-reset-scores");
+
+    const passStepIndicator = document.getElementById("pass-step-indicator");
+    const passPlayerBadge = document.getElementById("pass-player-badge");
+    const passPlayerName = document.getElementById("pass-player-name");
+    const cardHidden = document.getElementById("card-hidden");
+    const cardRevealed = document.getElementById("card-revealed");
+    const btnRevealWord = document.getElementById("btn-reveal-word");
+    const btnHidePass = document.getElementById("btn-hide-pass");
+    const revealedCategory = document.getElementById("revealed-category");
+    const revealedWord = document.getElementById("revealed-word");
+
+    // Timer elements
+    const timerContainer = document.getElementById("timer-container");
+    const timerDisplay = document.getElementById("timer-display");
+    const timerBar = document.getElementById("timer-bar");
+    const timerStatusBadge = document.getElementById("timer-status-badge");
+    const btnTimerToggle = document.getElementById("btn-timer-toggle");
+    const timerToggleIcon = document.getElementById("timer-toggle-icon");
+    const timerToggleText = document.getElementById("timer-toggle-text");
+    const btnTimerAdd30 = document.getElementById("btn-timer-add30");
+    const timerAlertBox = document.getElementById("timer-alert-box");
+
+    const votingPlayersGrid = document.getElementById("voting-players-grid");
+    const voteSelectionHint = document.getElementById("vote-selection-hint");
+    const btnShowReveal = document.getElementById("btn-show-reveal");
+    const revealBtnText = document.getElementById("reveal-btn-text");
+
+    const outcomeBanner = document.getElementById("outcome-banner");
+    const resultImposterColorDot = document.getElementById("result-imposter-color-dot");
+    const resultImposterName = document.getElementById("result-imposter-name");
+    const resultMajorityWord = document.getElementById("result-majority-word");
+    const resultImposterWord = document.getElementById("result-imposter-word");
+    const resultPlayersList = document.getElementById("result-players-list");
+    const resultScoreboardList = document.getElementById("result-scoreboard-list");
+    const btnPlayAgain = document.getElementById("btn-play-again");
+
+    // --- Screen Navigation Helper ---
+    function showScreen(screen) {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+      screenSetup.classList.add("hidden");
+      screenPass.classList.add("hidden");
+      screenDiscuss.classList.add("hidden");
+      screenResult.classList.add("hidden");
+      screen.classList.remove("hidden");
+    }
+
+    function getPlayerColor(index) {
+      return PLAYER_COLORS[index % PLAYER_COLORS.length];
+    }
+
+    // --- Word Source Mode Handling ---
+    function setWordSourceMode(mode) {
+      wordSourceMode = mode;
+      const activeClass = "py-1.5 px-2 text-xs font-semibold rounded-lg bg-indigo-600 text-white transition text-center shadow-sm";
+      const inactiveClass = "py-1.5 px-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-slate-200 transition text-center";
+
+      btnModeBuiltin.className = (mode === "builtin") ? activeClass : inactiveClass;
+      btnModeMix.className = (mode === "mix") ? activeClass : inactiveClass;
+      btnModeCustom.className = (mode === "custom") ? activeClass : inactiveClass;
+
+      if (mode === "custom") {
+        categorySection.classList.add("hidden");
+      } else {
+        categorySection.classList.remove("hidden");
+      }
+    }
+
+    btnModeBuiltin.addEventListener("click", () => { Sound.click(); setWordSourceMode("builtin"); });
+    btnModeMix.addEventListener("click", () => { Sound.click(); setWordSourceMode("mix"); });
+    btnModeCustom.addEventListener("click", () => { Sound.click(); setWordSourceMode("custom"); });
+
+    // --- Custom Word Creator UI ---
+    let isCustomFormOpen = true;
+    btnToggleCustomForm.addEventListener("click", () => {
+      Sound.click();
+      isCustomFormOpen = !isCustomFormOpen;
+      if (isCustomFormOpen) {
+        customWordForm.classList.remove("hidden");
+        btnToggleCustomForm.textContent = "- Close";
+      } else {
+        customWordForm.classList.add("hidden");
+        btnToggleCustomForm.textContent = "+ Add Pair";
+      }
+    });
+
+    function saveCustomPairsToStorage() {
+      try {
+        localStorage.setItem("imposter_custom_pairs", JSON.stringify(customPairs));
+      } catch (e) {}
+    }
+
+    function renderCustomPairsList() {
+      customWordsBadge.textContent = `${customPairs.length} ${customPairs.length === 1 ? 'Pair' : 'Pairs'}`;
+      customPairsContainer.innerHTML = "";
+
+      if (customPairs.length === 0) {
+        customPairsContainer.innerHTML = `<span class="text-xs text-slate-500 italic py-1">No custom pairs added yet. Add one above!</span>`;
+        return;
+      }
+
+      customPairs.forEach((pair, index) => {
+        const chip = document.createElement("div");
+        chip.className = "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800 text-slate-200 border border-slate-700 text-xs shadow-sm";
+        chip.innerHTML = `
+          <span><strong class="text-emerald-400">${pair.majority}</strong> / <strong class="text-rose-400">${pair.imposter}</strong></span>
+          <button type="button" class="text-slate-400 hover:text-rose-400 ml-1 p-0.5 transition" title="Delete pair">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
+          </button>
+        `;
+
+        chip.querySelector("button").addEventListener("click", () => {
+          Sound.click();
+          customPairs.splice(index, 1);
+          saveCustomPairsToStorage();
+          renderCustomPairsList();
+        });
+
+        customPairsContainer.appendChild(chip);
+      });
+    }
+
+    btnAddCustomPair.addEventListener("click", () => {
+      const maj = inputCustomMajority.value.trim();
+      const imp = inputCustomImposter.value.trim();
+
+      if (!maj || !imp) {
+        Sound.error();
+        customWordError.textContent = "Please enter both words.";
+        customWordError.classList.remove("hidden");
+        return;
+      }
+
+      if (maj.toLowerCase() === imp.toLowerCase()) {
+        Sound.error();
+        customWordError.textContent = "The words must be different.";
+        customWordError.classList.remove("hidden");
+        return;
+      }
+
+      customWordError.classList.add("hidden");
+      customPairs.push({ majority: maj, imposter: imp });
+      saveCustomPairsToStorage();
+
+      inputCustomMajority.value = "";
+      inputCustomImposter.value = "";
+      Sound.select();
+      renderCustomPairsList();
+    });
+
+    function getBuiltinPairs(catKey) {
+      if (catKey !== "all" && WORD_PAIRS[catKey]) {
+        return WORD_PAIRS[catKey];
+      }
+      const seen = new Set();
+      const combined = [];
+      Object.keys(WORD_PAIRS).forEach(k => {
+        WORD_PAIRS[k].forEach(pair => {
+          const key = pair.majority + "|" + pair.imposter;
+          if (!seen.has(key)) {
+            seen.add(key);
+            combined.push(pair);
+          }
+        });
+      });
+      return combined;
+    }
+
+    // --- Render Player Inputs & Color Dots ---
+    function renderPlayerInputs() {
+      playerInputsContainer.innerHTML = "";
+      players.forEach((player, index) => {
+        const color = getPlayerColor(index);
+        const row = document.createElement("div");
+        row.className = "flex items-center gap-2";
+
+        const colorBadge = document.createElement("div");
+        colorBadge.className = `w-7 h-7 rounded-xl ${color.bg} text-slate-950 font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-sm`;
+        colorBadge.textContent = `${index + 1}`;
+        colorBadge.title = color.name;
+        row.appendChild(colorBadge);
+
+        const input = document.createElement("input");
+        input.type = "text";
+        input.value = player.name;
+        input.className = "flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500";
+        input.placeholder = `Player ${index + 1}`;
+        input.addEventListener("input", (e) => {
+          player.name = e.target.value.trim() || `Player ${index + 1}`;
+          renderScoreboards();
+        });
+
+        row.appendChild(input);
+
+        if (players.length > 3) {
+          const deleteBtn = document.createElement("button");
+          deleteBtn.type = "button";
+          deleteBtn.className = "p-2 text-slate-400 hover:text-rose-400 transition";
+          deleteBtn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          `;
+          deleteBtn.addEventListener("click", () => {
+            Sound.click();
+            players.splice(index, 1);
+            renderPlayerInputs();
+            renderScoreboards();
+          });
+          row.appendChild(deleteBtn);
+        }
+
+        playerInputsContainer.appendChild(row);
+      });
+
+      playerCountBadge.textContent = `${players.length} Players`;
+      btnAddPlayer.disabled = players.length >= 8;
+      if (players.length >= 8) {
+        btnAddPlayer.classList.add("opacity-50", "cursor-not-allowed");
+      } else {
+        btnAddPlayer.classList.remove("opacity-50", "cursor-not-allowed");
+      }
+
+      renderScoreboards();
+    }
+
+    function renderScoreboards() {
+      roundsCountText.textContent = totalRoundsPlayed;
+      setupScoreboardList.innerHTML = "";
+
+      const sorted = [...players].map((p, originalIdx) => ({ ...p, originalIdx }))
+        .sort((a, b) => b.wins - a.wins);
+
+      sorted.forEach((p) => {
+        const color = getPlayerColor(p.originalIdx);
+        const item = document.createElement("div");
+        item.className = "flex items-center justify-between py-1 border-b border-slate-800 last:border-b-0";
+        item.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full ${color.bg}"></span>
+            <span class="font-medium text-slate-200">${p.name}</span>
+          </div>
+          <div class="flex items-center gap-1.5 font-bold">
+            <span class="${p.wins > 0 ? 'text-amber-300' : 'text-slate-400'}">${p.wins} ${p.wins === 1 ? 'Win' : 'Wins'}</span>
+          </div>
+        `;
+        setupScoreboardList.appendChild(item);
+      });
+    }
+
+    btnResetScores.addEventListener("click", () => {
+      Sound.click();
+      totalRoundsPlayed = 0;
+      players.forEach(p => p.wins = 0);
+      renderScoreboards();
+    });
+
+    btnAddPlayer.addEventListener("click", () => {
+      Sound.click();
+      if (players.length < 8) {
+        players.push({ name: `Player ${players.length + 1}`, wins: 0 });
+        renderPlayerInputs();
+      }
+    });
+
+    categorySelect.addEventListener("change", () => Sound.click());
+    timerSelect.addEventListener("change", () => Sound.click());
+
+    // --- Start Game Logic ---
+    btnStartGame.addEventListener("click", () => {
+      let candidatePool = [];
+      let categoryTitle = "";
+
+      const categoryDisplayNames = {
+        desi: "🇮🇳 Desi Special",
+        bollywood: "🎬 Bollywood & Movies",
+        cricket: "🏏 Cricket & Sports",
+        food: "🍲 Food & Drinks",
+        places: "🌍 Places & Cities",
+        objects: "📱 Everyday Objects & Games",
+        fruits: "🍎 Fruits & Vegetables",
+        people: "⭐ Famous People"
+      };
+
+      if (wordSourceMode === "custom") {
+        if (customPairs.length === 0) {
+          Sound.error();
+          customWordError.textContent = "⚠️ Please add at least 1 custom pair first, or switch to Built-in/Mix mode!";
+          customWordError.classList.remove("hidden");
+          if (!isCustomFormOpen) {
+            isCustomFormOpen = true;
+            customWordForm.classList.remove("hidden");
+            btnToggleCustomForm.textContent = "- Close";
+          }
+          inputCustomMajority.focus();
+          return;
+        }
+        candidatePool = customPairs;
+        categoryTitle = "Custom Word Pool";
+      } else if (wordSourceMode === "mix") {
+        const builtinList = getBuiltinPairs(categorySelect.value);
+        candidatePool = [...builtinList, ...customPairs];
+        const baseName = (categorySelect.value === "all") ? "Mixed Categories" : (categoryDisplayNames[categorySelect.value] || "General");
+        categoryTitle = `${baseName} + Custom`;
+      } else {
+        const catKey = categorySelect.value;
+        candidatePool = getBuiltinPairs(catKey);
+        categoryTitle = (catKey === "all") ? "Mixed Categories" : (categoryDisplayNames[catKey] || "General");
+      }
+
+      Sound.click();
+
+      chosenPair = candidatePool[Math.floor(Math.random() * candidatePool.length)];
+      chosenCategoryName = categoryTitle;
+      imposterIndex = Math.floor(Math.random() * players.length);
+      votedPlayerIndex = -1;
+
+      timerDuration = parseInt(timerSelect.value, 10);
+      currentTurnIndex = 0;
+      updatePassScreen();
+      showScreen(screenPass);
+    });
+
+    function updatePassScreen() {
+      const currentPlayer = players[currentTurnIndex];
+      const color = getPlayerColor(currentTurnIndex);
+
+      passStepIndicator.textContent = `Turn ${currentTurnIndex + 1} of ${players.length}`;
+      passPlayerName.textContent = `Pass to ${currentPlayer.name}`;
+      passPlayerBadge.className = `w-4 h-4 rounded-full ${color.bg} shadow-sm`;
+
+      cardHidden.classList.remove("hidden");
+      cardRevealed.classList.add("hidden");
+    }
+
+    btnRevealWord.addEventListener("click", () => {
+      Sound.reveal();
+      const isImposter = (currentTurnIndex === imposterIndex);
+      const secretWord = isImposter ? chosenPair.imposter : chosenPair.majority;
+
+      revealedCategory.textContent = `Category: ${chosenCategoryName}`;
+      revealedWord.textContent = secretWord;
+
+      cardHidden.classList.add("hidden");
+      cardRevealed.classList.remove("hidden");
+    });
+
+    btnHidePass.addEventListener("click", () => {
+      Sound.pass();
+      currentTurnIndex++;
+      if (currentTurnIndex < players.length) {
+        updatePassScreen();
+      } else {
+        prepareVotingScreen();
+        showScreen(screenDiscuss);
+        initDiscussionTimer();
+      }
+    });
+
+    function formatTime(seconds) {
+      const m = Math.floor(seconds / 60);
+      const s = seconds % 60;
+      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    function initDiscussionTimer() {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+
+      if (timerDuration === 0) {
+        timerContainer.classList.add("hidden");
+        return;
+      }
+
+      timerContainer.classList.remove("hidden");
+      timerRemaining = timerDuration;
+      isTimerPaused = false;
+      timerAlertBox.classList.add("hidden");
+      timerDisplay.className = "text-4xl font-extrabold font-mono tracking-wider text-white";
+      timerBar.className = "bg-indigo-500 h-2 rounded-full timer-progress";
+      timerStatusBadge.className = "px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
+      timerStatusBadge.textContent = "Active";
+      timerToggleIcon.textContent = "⏸️";
+      timerToggleText.textContent = "Pause";
+
+      updateTimerUI();
+
+      timerInterval = setInterval(() => {
+        if (isTimerPaused) return;
+
+        timerRemaining--;
+        updateTimerUI();
+
+        if (timerRemaining > 0 && timerRemaining <= 10) {
+          Sound.tick(true);
+        } else if (timerRemaining > 10 && timerRemaining % 10 === 0) {
+          Sound.tick(false);
+        }
+
+        if (timerRemaining <= 0) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+          onTimerExpired();
+        }
+      }, 1000);
+    }
+
+    function updateTimerUI() {
+      timerDisplay.textContent = formatTime(Math.max(0, timerRemaining));
+      const percentage = Math.max(0, (timerRemaining / timerDuration) * 100);
+      timerBar.style.width = `${percentage}%`;
+
+      if (timerRemaining <= 10 && timerRemaining > 0) {
+        timerDisplay.className = "text-4xl font-extrabold font-mono tracking-wider text-rose-400 animate-pulse";
+        timerBar.className = "bg-rose-500 h-2 rounded-full timer-progress";
+      } else if (timerRemaining <= 20) {
+        timerDisplay.className = "text-4xl font-extrabold font-mono tracking-wider text-amber-300";
+        timerBar.className = "bg-amber-500 h-2 rounded-full timer-progress";
+      }
+    }
+
+    function onTimerExpired() {
+      Sound.timesUp();
+      timerStatusBadge.className = "px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30";
+      timerStatusBadge.textContent = "Expired";
+      timerAlertBox.classList.remove("hidden");
+    }
+
+    btnTimerToggle.addEventListener("click", () => {
+      Sound.click();
+      if (timerRemaining <= 0) return;
+      isTimerPaused = !isTimerPaused;
+      if (isTimerPaused) {
+        timerToggleIcon.textContent = "▶️";
+        timerToggleText.textContent = "Resume";
+        timerStatusBadge.className = "px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30";
+        timerStatusBadge.textContent = "Paused";
+      } else {
+        timerToggleIcon.textContent = "⏸️";
+        timerToggleText.textContent = "Pause";
+        timerStatusBadge.className = "px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
+        timerStatusBadge.textContent = "Active";
+      }
+    });
+
+    btnTimerAdd30.addEventListener("click", () => {
+      Sound.click();
+      timerRemaining += 30;
+      if (timerRemaining > timerDuration) {
+        timerDuration = timerRemaining;
+      }
+      timerAlertBox.classList.add("hidden");
+      if (timerInterval === null) {
+        initDiscussionTimer();
+      } else {
+        updateTimerUI();
+      }
+    });
+
+    function prepareVotingScreen() {
+      votedPlayerIndex = -1;
+      revealBtnText.textContent = "Reveal Secret Roles & Words";
+      voteSelectionHint.textContent = "Tap who the group suspects";
+      voteSelectionHint.className = "text-xs text-amber-300 font-medium";
+      btnShowReveal.classList.add("opacity-60");
+
+      votingPlayersGrid.innerHTML = "";
+      players.forEach((player, index) => {
+        const color = getPlayerColor(index);
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "vote-card p-3 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-left transition flex items-center justify-between";
+        btn.innerHTML = `
+          <div class="flex items-center gap-2 truncate">
+            <span class="w-3 h-3 rounded-full ${color.bg} flex-shrink-0"></span>
+            <span class="font-semibold text-sm text-slate-200 truncate">${player.name}</span>
+          </div>
+          <span class="vote-radio w-4 h-4 rounded-full border border-slate-500 flex items-center justify-center flex-shrink-0 ml-1"></span>
+        `;
+        btn.addEventListener("click", () => {
+          Sound.select();
+          votedPlayerIndex = index;
+          updateVotingCardsUI();
+        });
+        votingPlayersGrid.appendChild(btn);
+      });
+    }
+
+    function updateVotingCardsUI() {
+      const cards = votingPlayersGrid.querySelectorAll(".vote-card");
+      cards.forEach((card, idx) => {
+        const radio = card.querySelector(".vote-radio");
+        const nameSpan = card.querySelector(".font-semibold, .font-bold");
+        if (idx === votedPlayerIndex) {
+          card.className = "vote-card p-3 rounded-xl border-2 border-amber-500 bg-amber-500/10 text-left transition flex items-center justify-between shadow-md shadow-amber-500/10";
+          if (nameSpan) nameSpan.className = "font-bold text-sm text-amber-300 truncate";
+          radio.className = "vote-radio w-4 h-4 rounded-full bg-amber-500 border-2 border-amber-500 flex items-center justify-center flex-shrink-0 ml-1";
+          radio.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-slate-950"></span>`;
+        } else {
+          card.className = "vote-card p-3 rounded-xl border border-slate-700 bg-slate-800/80 hover:bg-slate-700/80 text-left transition flex items-center justify-between opacity-80";
+          if (nameSpan) nameSpan.className = "font-semibold text-sm text-slate-300 truncate";
+          radio.className = "vote-radio w-4 h-4 rounded-full border border-slate-500 flex items-center justify-center flex-shrink-0 ml-1";
+          radio.innerHTML = "";
+        }
+      });
+
+      if (votedPlayerIndex !== -1) {
+        btnShowReveal.classList.remove("opacity-60");
+        revealBtnText.textContent = `Vote for ${players[votedPlayerIndex].name} & Reveal`;
+        voteSelectionHint.textContent = `Voted for ${players[votedPlayerIndex].name}`;
+        voteSelectionHint.className = "text-xs text-emerald-400 font-semibold";
+      }
+    }
+
+    btnShowReveal.addEventListener("click", () => {
+      if (votedPlayerIndex === -1) {
+        Sound.error();
+        voteSelectionHint.textContent = "⚠️ Please tap a player first!";
+        voteSelectionHint.className = "text-xs text-rose-400 font-bold animate-pulse";
+        return;
+      }
+
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+
+      totalRoundsPlayed++;
+      const imposterCaught = (votedPlayerIndex === imposterIndex);
+      const votedName = players[votedPlayerIndex].name;
+      const imposterName = players[imposterIndex].name;
+      const imposterColor = getPlayerColor(imposterIndex);
+
+      if (imposterCaught) {
+        players.forEach((p, idx) => {
+          if (idx !== imposterIndex) {
+            p.wins++;
+          }
+        });
+
+        Sound.victory();
+        outcomeBanner.className = "p-4 rounded-2xl mb-4 border border-emerald-500/50 bg-emerald-950/40 text-center";
+        outcomeBanner.innerHTML = `
+          <div class="inline-flex items-center gap-1.5 text-xs uppercase tracking-wider font-extrabold text-emerald-400 bg-emerald-900/60 px-3 py-1 rounded-full border border-emerald-500/40 mb-2">
+            🎉 Citizens Win! (+1 Point to Citizens)
+          </div>
+          <h3 class="text-xl font-bold text-white">The Imposter Was Caught!</h3>
+          <p class="text-xs text-emerald-300 mt-1">The group correctly accused <strong class="text-white">${votedName}</strong>, who was indeed the imposter!</p>
+        `;
+      } else {
+        players[imposterIndex].wins++;
+
+        Sound.defeat();
+        outcomeBanner.className = "p-4 rounded-2xl mb-4 border border-rose-500/50 bg-rose-950/40 text-center";
+        outcomeBanner.innerHTML = `
+          <div class="inline-flex items-center gap-1.5 text-xs uppercase tracking-wider font-extrabold text-rose-400 bg-rose-900/60 px-3 py-1 rounded-full border border-rose-500/40 mb-2">
+            😈 Imposter Wins! (+1 Point to Imposter)
+          </div>
+          <h3 class="text-xl font-bold text-white">The Imposter Escaped!</h3>
+          <p class="text-xs text-rose-300 mt-1">The group falsely accused <strong class="text-white">${votedName}</strong> (Innocent Citizen), while <strong class="text-white">${imposterName}</strong> fooled everyone!</p>
+        `;
+      }
+
+      resultImposterColorDot.className = `w-4 h-4 rounded-full ${imposterColor.bg} flex-shrink-0 shadow-sm`;
+      resultImposterName.textContent = imposterName;
+      resultMajorityWord.textContent = chosenPair.majority;
+      resultImposterWord.textContent = chosenPair.imposter;
+
+      resultPlayersList.innerHTML = "";
+      players.forEach((player, idx) => {
+        const color = getPlayerColor(idx);
+        const item = document.createElement("div");
+        item.className = "flex items-center justify-between py-1.5 border-b border-slate-800 last:border-b-0";
+        const isImp = (idx === imposterIndex);
+        const wasVoted = (idx === votedPlayerIndex);
+        const earnedWin = (isImp && !imposterCaught) || (!isImp && imposterCaught);
+        
+        item.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full ${color.bg} flex-shrink-0"></span>
+            <span class="font-medium ${isImp ? 'text-rose-400 font-bold' : 'text-slate-300'}">${player.name}</span>
+            ${wasVoted ? '<span class="text-[10px] uppercase font-bold bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded border border-amber-500/30">Voted</span>' : ''}
+            ${earnedWin ? '<span class="text-[10px] uppercase font-bold bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500/30">+1 Pt</span>' : ''}
+          </div>
+          <span class="text-xs px-2 py-0.5 rounded ${isImp ? 'bg-rose-500/20 text-rose-300 font-bold' : 'bg-slate-800 text-slate-400'}">
+            ${isImp ? 'Imposter (' + chosenPair.imposter + ')' : 'Citizen (' + chosenPair.majority + ')'}
+          </span>
+        `;
+        resultPlayersList.appendChild(item);
+      });
+
+      resultScoreboardList.innerHTML = "";
+      const sorted = [...players].map((p, originalIdx) => ({ ...p, originalIdx }))
+        .sort((a, b) => b.wins - a.wins);
+
+      sorted.forEach((p) => {
+        const color = getPlayerColor(p.originalIdx);
+        const scoreRow = document.createElement("div");
+        scoreRow.className = "flex items-center justify-between py-1 border-b border-slate-800/80 last:border-b-0";
+        scoreRow.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full ${color.bg}"></span>
+            <span class="font-medium text-slate-200">${p.name}</span>
+          </div>
+          <span class="font-bold ${p.wins > 0 ? 'text-amber-300' : 'text-slate-400'}">${p.wins} ${p.wins === 1 ? 'Win' : 'Wins'}</span>
+        `;
+        resultScoreboardList.appendChild(scoreRow);
+      });
+
+      showScreen(screenResult);
+    });
+
+    btnPlayAgain.addEventListener("click", () => {
+      Sound.click();
+      renderScoreboards();
+      showScreen(screenSetup);
+    });
+
+    // Initial load
+    renderPlayerInputs();
+    renderCustomPairsList();
+  </script>
+</body>
+</html>
