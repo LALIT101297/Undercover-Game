@@ -1,10 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
-    <application android:theme="@android:style/Theme.Material.Light.NoActionBar" android:label="Undercover Imposter" android:usesCleartextTraffic="false">
-       <meta-data
-    android:name="com.google.android.gms.ads.APPLICATION_ID"
-    android:value="ca-app-pub-9756829260313013~4382865964"/>
-        <activity android:name=".MainActivity" android:exported="true" android:screenOrientation="portrait">
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
+    <application
+        android:theme="@android:style/Theme.Material.Light.NoActionBar"
+        android:label="Undercover Imposter"
+        android:usesCleartextTraffic="false">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
