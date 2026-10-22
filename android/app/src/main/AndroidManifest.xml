@@ -5,7 +5,7 @@
 
     <application
         android:theme="@android:style/Theme.Material.Light.NoActionBar"
-        android:label="Undercover Imposter"
+        android:label="Party Games Online & Offline"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="false"
