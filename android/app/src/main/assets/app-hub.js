@@ -356,7 +356,11 @@
     ["pg-dialogue-card","🎬","Bollywood Dialogue Challenge","Guess the film or actor","dialogue"],
     ["pg-music-card","🎵","Bollywood Music Quiz","Song trivia · no audio","music"],
     ["pg-snl-card","🐍","Snakes & Ladders","2–4 players · bots optional","snl"],
-    ["pg-ludo-card","🎲","Ludo","2–4 players · local play","ludo"]
+    ["pg-ludo-card","🎲","Ludo","2–4 players · local play","ludo"],
+    ["pg-memory-card","🧠","Memory Match","Find matching pairs · solo","memory"],
+    ["pg-connect-card","🔴","Connect Four","2 players or vs bot","connect"],
+    ["pg-wordchain-card","🔗","Word Chain","Take turns · last letter wins","wordchain"],
+    ["pg-number-card","🔢","Number Challenge","Quick mental maths · 10 rounds","number"]
   ];
   const gameGrid=root.querySelector("#pg-home .grid.grid-cols-2");
   if(gameGrid){
@@ -536,6 +540,46 @@
     $id("ludo-begin").onclick=()=>{const n=Number($id("ludo-count").value),bots=Math.min(n-1,Number($id("ludo-bots").value));ludoPlayers=Array.from({length:n},(_,i)=>({name:"Player "+(i+1),tokens:[-1,-1,-1,-1],bot:i>=n-bots}));ludoTurn=0;ludoDice=0;ludoFinished=false;ludoRender();if(ludoPlayers[0].bot)window.setTimeout(ludoBotTurn,500);};
   }
   document.getElementById("pg-ludo-card").onclick=launchLudo;
+
+  // Easy/medium offline games: Memory Match, Connect Four, Word Chain and Number Challenge.
+  const memoryDeck=["🍎","🍌","🍇","🍉","🍒","🥝","🍍","🥑","🍎","🍌","🍇","🍉","🍒","🥝","🍍","🥑"];
+  function launchMemory(){
+    showSimple("🧠 Memory Match","Find all matching pairs. Tap two cards at a time and try to finish in fewer moves.",'<button id="memory-start" class="primary w-full rounded-xl py-3">Start game</button>');
+    $id("memory-start").onclick=()=>{
+      const deck=memoryDeck.slice().sort(()=>Math.random()-.5);let open=[],matched=new Set(),moves=0,lock=false;
+      const render=()=>{
+        $id("pg-simple-play").innerHTML='<div class="flex justify-between text-sm"><b>Moves: '+moves+'</b><b>Pairs: '+matched.size+'/8</b></div><div class="grid grid-cols-4 gap-2">'+deck.map((v,i)=>'<button data-i="'+i+'" class="memory-tile aspect-square rounded-xl text-2xl font-bold bg-slate-800 border border-white/10">'+(matched.has(i)||open.includes(i)?v:"?")+'</button>').join("")+'</div>'+(matched.size===8?'<p class="text-center font-bold text-xl">🎉 Completed in '+moves+' moves!</p><button id="memory-again" class="primary w-full rounded-xl py-3">Play again</button>':"");
+        document.querySelectorAll(".memory-tile").forEach(btn=>btn.onclick=()=>{const i=Number(btn.dataset.i);if(lock||matched.has(i)||open.includes(i))return;open.push(i);if(open.length===2){moves++;const [a,b]=open;if(deck[a]===deck[b]){matched.add(a);matched.add(b);open=[];render();}else{lock=true;render();window.setTimeout(()=>{open=[];lock=false;render();},850);}}else render();});
+        const again=$id("memory-again");if(again)again.onclick=launchMemory;
+      };render();
+    };
+  }
+  const connectLines=[[0,1,2,3],[1,2,3,4],[2,3,4,5],[3,4,5,6]];
+  function launchConnect(){
+    showSimple("🔴 Connect Four","Drop four discs in a row horizontally, vertically or diagonally. Play with a friend or local bot.",'<label class="block text-sm">Opponent<select id="connect-mode" class="field"><option value="bot">Play vs Bot</option><option value="human">2 players · Pass & Play</option></select></label><button id="connect-start" class="primary w-full rounded-xl py-3">Start game</button>');
+    $id("connect-start").onclick=()=>{
+      let board=Array(42).fill(0),turn=1,done=false,mode=$id("connect-mode").value;
+      const wins=()=>{for(let r=0;r<6;r++)for(let c=0;c<7;c++){const v=board[r*7+c];if(!v)continue;for(const [dr,dc] of [[0,1],[1,0],[1,1],[1,-1]]){let ok=true;for(let k=1;k<4;k++){let rr=r+dr*k,cc=c+dc*k;if(rr<0||rr>=6||cc<0||cc>=7||board[rr*7+cc]!==v){ok=false;break;}}if(ok)return v;}}return 0;};
+      const drop=(col,bot=false)=>{if(done)return;let row=-1;for(let r=5;r>=0;r--)if(!board[r*7+col]){row=r;break;}if(row<0)return;board[row*7+col]=turn;const win=wins();if(win)done=true;else if(board.every(Boolean))done=true;else turn=3-turn;render();if(!done&&mode==="bot"&&turn===2)window.setTimeout(botMove,500);};
+      const botMove=()=>{const valid=Array.from({length:7},(_,c)=>c).filter(c=>board[c]===0);if(!valid.length)return;let choice=null;for(const player of [2,1]){for(const c of valid){const copy=board.slice();let rr=-1;for(let r=5;r>=0;r--)if(!copy[r*7+c]){rr=r;break;}copy[rr*7+c]=player;const save=board;board=copy;const won=wins()===player;board=save;if(won){choice=c;break;}}if(choice!==null)break;}if(choice===null)choice=valid.sort((a,b)=>Math.abs(a-3)-Math.abs(b-3))[0];drop(choice,true);};
+      const render=()=>{$id("pg-simple-play").innerHTML='<p class="text-center font-bold">'+(done?(wins()?"Player "+wins()+" wins! 🏆":"Draw!"):("Player "+turn+"'s turn · "+(turn===1?"🔴":"🟡")))+'</p><div class="grid grid-cols-7 gap-1">'+board.map((v,i)=>'<button data-col="'+(i%7)+'" class="aspect-square rounded-full border border-white/20 '+(v===1?"bg-red-500":v===2?"bg-yellow-400":"bg-slate-800")+'" '+(done|| (mode==="bot"&&turn===2)?"disabled":"")+'></button>').join("")+'</div>'+(done?'<button id="connect-again" class="primary w-full rounded-xl py-3">Play again</button>':"");document.querySelectorAll("[data-col]").forEach(b=>b.onclick=()=>drop(Number(b.dataset.col)));const again=$id("connect-again");if(again)again.onclick=launchConnect;};
+      render();
+    };
+  }
+  const wordBank=["apple","eagle","engine","elephant","tiger","rabbit","table","earth","house","river","rose","energy","yellow","window","orange","grape","school","lamp","planet","train","night","tree","envelope","egg","garden","nest","tea","ant","tomato","owl"];
+  function launchWordChain(){
+    showSimple("🔗 Word Chain","Take turns saying a word that starts with the last letter of the previous word. No repeats. Play with a friend or bot.",'<label class="block text-sm">Opponent<select id="chain-mode" class="field"><option value="bot">Play vs Bot</option><option value="human">2 players · Pass & Play</option></select></label><button id="chain-start" class="primary w-full rounded-xl py-3">Start</button>');
+    $id("chain-start").onclick=()=>{let used=[],turn=1,mode=$id("chain-mode").value,need="",round=0,done=false;const render=()=>{$id("pg-simple-play").innerHTML='<p class="text-center">Round '+round+' · '+(need?'Word must start with <b class="text-xl">'+need.toUpperCase()+'</b>':"Start with any word")+'</p><p class="text-sm">Player '+turn+"'s turn"+(mode==="bot"&&turn===2?" 🤖":"")+'</p><p class="text-xs text-slate-400 break-words">Used: '+used.join(", ")+'</p><input id="chain-word" class="field" placeholder="Enter a word"><button id="chain-submit" class="primary w-full rounded-xl py-3">Submit word</button><p id="chain-msg" class="text-sm text-center"></p>'; $id("chain-submit").onclick=()=>{const w=$id("chain-word").value.trim().toLowerCase();if(!/^[a-z]+$/.test(w)||used.includes(w)||(need&&w[0]!==need)){$id("chain-msg").textContent="Invalid word, repeated word, or wrong starting letter.";return;}play(w);};};const play=w=>{used.push(w);need=w[w.length-1];round++;turn=3-turn;if(round>=20){done=true;$id("pg-simple-play").innerHTML='<p class="text-center font-bold">20 turns completed! 🎉</p><button id="chain-again" class="primary w-full rounded-xl py-3">Play again</button>';$id("chain-again").onclick=launchWordChain;return;}render();if(mode==="bot"&&turn===2)window.setTimeout(()=>{const choice=wordBank.find(x=>x[0]===need&&!used.includes(x));if(choice)play(choice);else{$id("pg-simple-play").innerHTML='<p class="text-center font-bold">🤖 Bot has no word. You win!</p><button id="chain-again" class="primary w-full rounded-xl py-3">Play again</button>';$id("chain-again").onclick=launchWordChain;}},650);};render();};
+  }
+  function launchNumber(){
+    showSimple("🔢 Number Challenge","Solve 10 quick mental-maths questions. Beat your best score!",'<button id="number-start" class="primary w-full rounded-xl py-3">Start challenge</button>');
+    $id("number-start").onclick=()=>{let q=0,score=0,current=null;const next=()=>{if(q>=10){$id("pg-simple-play").innerHTML='<div class="text-center panel"><p class="text-sm">Final score</p><p class="text-4xl font-black">'+score+'/10</p><button id="number-again" class="primary w-full rounded-xl py-3 mt-3">Play again</button></div>';$id("number-again").onclick=launchNumber;return;}const a=2+Math.floor(Math.random()*18),b=2+Math.floor(Math.random()*12),op=["+","−","×"][Math.floor(Math.random()*3)];current={a,b,op,answer:op==="+"?a+b:op==="−"?a-b:a*b};$id("pg-simple-play").innerHTML='<p class="text-center text-sm">Question '+(q+1)+'/10 · Score '+score+'</p><p class="text-center text-4xl font-black my-5">'+a+' '+op+' '+b+' = ?</p><input id="number-answer" class="field text-center" type="number" placeholder="Your answer"><button id="number-check" class="primary w-full rounded-xl py-3">Check</button><p id="number-feedback" class="text-center text-sm"></p>';$id("number-check").onclick=()=>{const ok=Number($id("number-answer").value)===current.answer;if(ok)score++;q++;$id("number-feedback").textContent=ok?"Correct!":"Answer: "+current.answer;$id("number-check").disabled=true;const n=document.createElement("button");n.className="primary w-full rounded-xl py-3 mt-2";n.textContent=q===10?"See score":"Next question";n.onclick=next;$id("pg-simple-play").appendChild(n);};};next();};
+  }
+  document.getElementById("pg-memory-card").onclick=launchMemory;
+  document.getElementById("pg-connect-card").onclick=launchConnect;
+  document.getElementById("pg-wordchain-card").onclick=launchWordChain;
+  document.getElementById("pg-number-card").onclick=launchNumber;
+
 
     let mode = "login";
   let session = null;
