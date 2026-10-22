@@ -402,7 +402,13 @@
     document.getElementById("pg-email").value = ""; document.getElementById("pg-password").value = "";
     setMode("login");
   });
-  window.pgHandleBack=function(){\n    if(!profileView.classList.contains("hidden")){profileView.classList.add("hidden");homeView.classList.remove("hidden");window.scrollTo(0,0);return true;}\n    if(!homeView.classList.contains("hidden"))return false;\n    if(!legacy.classList.contains("pg-hidden")){legacy.classList.add("pg-hidden");footer.classList.add("pg-hidden");homeView.classList.remove("hidden");profileView.classList.add("hidden");window.scrollTo(0,0);return true;}\n    const visibleMini=["pg-ttt","pg-rps-game","pg-quiz-game"].find(id=>{const el=document.getElementById(id);return el&&!el.classList.contains("hidden");});\n    if(visibleMini){document.getElementById(visibleMini).classList.add("hidden");homeView.classList.remove("hidden");window.scrollTo(0,0);return true;}\n    return false;\n  };\n  client.auth.getSession().then(({data}) => {
+  window.pgHandleBack=function(){
+    if(!profileView.classList.contains("hidden")){profileView.classList.add("hidden");homeView.classList.remove("hidden");window.scrollTo(0,0);return true;}
+    if(!homeView.classList.contains("hidden"))return false;
+    if(!legacy.classList.contains("pg-hidden")){legacy.classList.add("pg-hidden");footer.classList.add("pg-hidden");homeView.classList.remove("hidden");profileView.classList.add("hidden");window.scrollTo(0,0);return true;}
+    const visibleMini=["pg-ttt","pg-rps-game","pg-quiz-game"].find(id=>{const el=document.getElementById(id);return el&&!el.classList.contains("hidden");});
+    if(visibleMini){document.getElementById(visibleMini).classList.add("hidden");homeView.classList.remove("hidden");window.scrollTo(0,0);return true;}
+    return false;\n  };\n  client.auth.getSession().then(({data}) => {
     if (data.session) showHome(data.session);
   }).catch(() => {});
 })();
