@@ -483,6 +483,9 @@
         <div id="result-players-list" class="space-y-1.5 text-sm"></div>
       </div>
 
+      <button id="btn-rewarded-bonus" type="button" class="w-full py-3 px-4 mb-2 rounded-xl font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 text-sm shadow transition">
+        Watch Video Ad · Earn +1 Bonus Win
+      </button>
       <button id="btn-play-again" type="button" class="w-full py-3.5 px-4 rounded-xl font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg transition">
         <span id="play-again-text">Play Next Round</span>
       </button>
@@ -1283,6 +1286,7 @@
     let imposterIndices = [];
     let selectedVoteIndices = [];
     let totalRoundsPlayed = 0;
+    let lastRewardWinnerIndices = [];
     let currentTurnIndex = 0;
     let chosenPair = null;
     let chosenCategoryName = "";
@@ -1644,7 +1648,12 @@
         return;
       }
       totalRoundsPlayed++;
+      if (window.AndroidAds) window.AndroidAds.onRoundCompleted(totalRoundsPlayed);
       const allCaught = imposterIndices.every(idx => selectedVoteIndices.includes(idx));
+      lastRewardWinnerIndices = allCaught
+        ? players.map((p, i) => i).filter(i => !imposterIndices.includes(i))
+        : imposterIndices.slice();
+      document.getElementById("btn-rewarded-bonus").classList.remove("hidden");
       const imposterNames = imposterIndices.map(i => players[i].name).join(" & ");
 
       const outcomeBanner = document.getElementById("outcome-banner");
@@ -1682,6 +1691,33 @@
       document.getElementById("play-again-text").textContent = "Play Next Round";
       showScreen(screenResult);
     });
+
+    document.getElementById("btn-rewarded-bonus").addEventListener("click", () => {
+      if (activeGameMode === "online") {
+        showToast("Bonus video reward is currently available in Pass & Play mode.");
+        return;
+      }
+      if (window.AndroidAds && window.AndroidAds.showRewardedAd) {
+        window.AndroidAds.showRewardedAd();
+      } else {
+        showToast("Rewarded ads are available in the Android app only.");
+      }
+    });
+
+    window.onInMobiRewardEarned = function() {
+      if (!lastRewardWinnerIndices.length) return;
+      lastRewardWinnerIndices.forEach(i => {
+        if (players[i]) players[i].wins++;
+      });
+      lastRewardWinnerIndices = [];
+      renderScoreboards();
+      showToast("Reward earned! +1 bonus win added to the winning side.");
+      document.getElementById("btn-rewarded-bonus").classList.add("hidden");
+    };
+
+    window.onInMobiRewardUnavailable = function() {
+      showToast("Reward video is not ready. Please try again in a moment.");
+    };
 
     document.getElementById("btn-play-again").addEventListener("click", () => {
       Sound.click();
