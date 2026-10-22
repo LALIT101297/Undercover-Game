@@ -69,12 +69,96 @@
         <div class="tile"><div class="flex justify-between"><span class="text-3xl">🎭</span><span class="pill">Coming soon</span></div><div><h3 class="font-extrabold">Dumb Charades</h3><p class="text-[11px] text-slate-400">Act it out.</p></div></div>
         <div class="tile"><div class="flex justify-between"><span class="text-3xl">🧠</span><span class="pill">Coming soon</span></div><div><h3 class="font-extrabold">Quiz Battle</h3><p class="text-[11px] text-slate-400">Challenge friends.</p></div></div>
         <div class="tile"><div class="flex justify-between"><span class="text-3xl">✊</span><span class="pill">Coming soon</span></div><div><h3 class="font-extrabold">Rock Paper Scissors</h3><p class="text-[11px] text-slate-400">Quick duels.</p></div></div>
-        <div class="tile"><div class="flex justify-between"><span class="text-3xl">❎</span><span class="pill">Coming soon</span></div><div><h3 class="font-extrabold">Tic Tac Toe</h3><p class="text-[11px] text-slate-400">Classic face-off.</p></div></div>
+        <button id="pg-tictactoe" class="tile text-left border-cyan-300/30"><div class="flex justify-between"><span class="text-3xl">❎</span><span class="pill">Playable · Offline bots</span></div><div><h3 class="font-extrabold">Tic Tac Toe</h3><p class="text-[11px] text-slate-400">Play locally against a bot.</p></div></button>
       </div>
       <nav class="nav"><button id="pg-home-nav">🏠 Home</button><button id="pg-profile-nav">👤 Profile</button><button id="pg-signout">↪ Sign out</button></nav>
       <p id="pg-home-message" class="text-center text-[10px] text-slate-500 mt-3"></p>
     </section>`;
   document.body.insertBefore(root, legacy);
+
+  const ttt = document.createElement("section");
+  ttt.id = "pg-ttt";
+  ttt.className = "hidden";
+  ttt.innerHTML = `
+    <div class="panel">
+      <div class="flex items-center justify-between mb-4">
+        <button id="pg-ttt-back" class="text-sm text-violet-200 font-bold">← Games</button>
+        <span class="pill">OFFLINE · NO INTERNET</span>
+      </div>
+      <h2 class="text-2xl font-black text-center">❎ Tic Tac Toe</h2>
+      <p class="text-xs text-slate-400 text-center mt-1">You are X · Bot is O</p>
+      <div class="grid grid-cols-2 gap-2 mt-5">
+        <label class="text-xs text-slate-300">Bot difficulty
+          <select id="pg-ttt-level" class="field"><option value="easy">Easy</option><option value="medium" selected>Medium</option><option value="hard">Hard</option></select>
+        </label>
+        <label class="text-xs text-slate-300">Who starts?
+          <select id="pg-ttt-start" class="field"><option value="human">You</option><option value="bot">Bot</option></select>
+        </label>
+      </div>
+      <p id="pg-ttt-status" class="text-center font-bold text-lg mt-5" aria-live="polite">Your turn</p>
+      <div id="pg-ttt-board" class="grid grid-cols-3 gap-2 max-w-xs mx-auto mt-4" role="group" aria-label="Tic Tac Toe board"></div>
+      <div class="grid grid-cols-2 gap-2 mt-5">
+        <button id="pg-ttt-new" class="primary rounded-xl py-3 font-bold">New game</button>
+        <button id="pg-ttt-reset" class="rounded-xl py-3 font-bold bg-slate-700">Reset score</button>
+      </div>
+      <div class="grid grid-cols-3 gap-2 mt-4 text-center">
+        <div class="rounded-xl bg-slate-900/70 p-3"><p class="text-[10px] text-slate-400">YOU</p><p id="pg-ttt-you-score" class="text-xl font-black">0</p></div>
+        <div class="rounded-xl bg-slate-900/70 p-3"><p class="text-[10px] text-slate-400">DRAWS</p><p id="pg-ttt-draw-score" class="text-xl font-black">0</p></div>
+        <div class="rounded-xl bg-slate-900/70 p-3"><p class="text-[10px] text-slate-400">BOT</p><p id="pg-ttt-bot-score" class="text-xl font-black">0</p></div>
+      </div>
+    </div>`;
+  root.appendChild(ttt);
+  const tttStyle = document.createElement("style");
+  tttStyle.textContent = `#pg-ttt .ttt-cell{aspect-ratio:1;border:1px solid #ffffff24;border-radius:16px;background:#10172b;font-size:clamp(2.5rem,12vw,4rem);font-weight:900;color:#e9d5ff}#pg-ttt .ttt-cell:disabled{opacity:1}#pg-ttt .ttt-cell.x{color:#67e8f9}#pg-ttt .ttt-cell.o{color:#f9a8d4}`;
+  document.head.appendChild(tttStyle);
+  let tttBoard=Array(9).fill("");
+  let tttOver=false, tttTurn="X";
+  const tttScore={you:0,draw:0,bot:0};
+  const tttWins=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+  const tttWinner=b=>{for(const line of tttWins){const [a,c,d]=line;if(b[a]&&b[a]===b[c]&&b[a]===b[d])return b[a];}return b.every(Boolean)?"draw":null;};
+  function tttMinimax(b,player){
+    const result=tttWinner(b);if(result==="O")return {score:10};if(result==="X")return {score:-10};if(result==="draw")return {score:0};
+    const moves=[];for(let i=0;i<9;i++)if(!b[i]){b[i]=player;const next=tttMinimax(b,player==="O"?"X":"O");moves.push({index:i,score:next.score});b[i]="";}
+    return moves.reduce((best,m)=>!best||(player==="O"?m.score>best.score:m.score<best.score)?m:best,null);
+  }
+  function tttBotMove(){
+    const empty=tttBoard.map((v,i)=>v?null:i).filter(v=>v!==null);if(!empty.length)return;
+    const level=document.getElementById("pg-ttt-level").value;
+    let move;
+    if(level==="hard")move=tttMinimax(tttBoard.slice(),"O").index;
+    else {
+      const winOrBlock=mark=>{for(const i of empty){const b=tttBoard.slice();b[i]=mark;if(tttWinner(b)===mark)return i;}return null;};
+      if(level==="medium")move=winOrBlock("O")??winOrBlock("X");
+      if(move===undefined||move===null){
+        if(level==="medium"&&tttBoard[4]==="")move=4;
+        else if(level==="medium"){const corners=[0,2,6,8].filter(i=>!tttBoard[i]);move=corners.length?corners[Math.floor(Math.random()*corners.length)]:empty[Math.floor(Math.random()*empty.length)];}
+        else move=empty[Math.floor(Math.random()*empty.length)];
+      }
+    }
+    tttBoard[move]="O";tttTurn="X";tttRender();
+  }
+  function tttFinish(){
+    const result=tttWinner(tttBoard);if(!result)return false;tttOver=true;
+    if(result==="X"){tttScore.you++;document.getElementById("pg-ttt-status").textContent="🎉 You win!";}
+    else if(result==="O"){tttScore.bot++;document.getElementById("pg-ttt-status").textContent="🤖 Bot wins this round.";}
+    else{tttScore.draw++;document.getElementById("pg-ttt-status").textContent="🤝 It's a draw.";}
+    document.getElementById("pg-ttt-you-score").textContent=tttScore.you;
+    document.getElementById("pg-ttt-draw-score").textContent=tttScore.draw;
+    document.getElementById("pg-ttt-bot-score").textContent=tttScore.bot;return true;
+  }
+  function tttRender(){
+    const board=document.getElementById("pg-ttt-board");board.innerHTML="";
+    tttBoard.forEach((mark,i)=>{const btn=document.createElement("button");btn.type="button";btn.className="ttt-cell "+(mark==="X"?"x":mark==="O"?"o":"");btn.textContent=mark;btn.setAttribute("aria-label","Cell "+(i+1)+(mark?", "+mark:" empty"));btn.disabled=!!mark||tttOver||tttTurn!=="X";btn.addEventListener("click",()=>{if(tttOver||tttTurn!=="X"||tttBoard[i])return;tttBoard[i]="X";if(tttFinish()){tttRender();return;}tttTurn="O";document.getElementById("pg-ttt-status").textContent="Bot is thinking…";tttRender();window.setTimeout(()=>{if(!tttOver){tttBotMove();if(!tttFinish())document.getElementById("pg-ttt-status").textContent="Your turn";tttRender();}},320);});board.appendChild(btn);});
+    if(!tttOver)document.getElementById("pg-ttt-status").textContent=tttTurn==="X"?"Your turn":"Bot is thinking…";
+  }
+  function tttNewGame(){
+    tttBoard=Array(9).fill("");tttOver=false;tttTurn="X";tttRender();
+    if(document.getElementById("pg-ttt-start").value==="bot"){tttTurn="O";tttRender();window.setTimeout(()=>{if(!tttOver){tttBotMove();tttRender();}},320);}
+  }
+  document.getElementById("pg-tictactoe").addEventListener("click",()=>{homeView.classList.add("hidden");ttt.classList.remove("hidden");tttNewGame();window.scrollTo({top:0,behavior:"smooth"});});
+  document.getElementById("pg-ttt-back").addEventListener("click",()=>{ttt.classList.add("hidden");homeView.classList.remove("hidden");window.scrollTo({top:0,behavior:"smooth"});});
+  document.getElementById("pg-ttt-new").addEventListener("click",tttNewGame);
+  document.getElementById("pg-ttt-reset").addEventListener("click",()=>{tttScore.you=tttScore.draw=tttScore.bot=0;document.getElementById("pg-ttt-you-score").textContent="0";document.getElementById("pg-ttt-draw-score").textContent="0";document.getElementById("pg-ttt-bot-score").textContent="0";tttNewGame();});
 
   let mode = "login";
   let session = null;
