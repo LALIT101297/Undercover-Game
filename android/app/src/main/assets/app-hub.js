@@ -394,22 +394,36 @@
       };
     };
   }
-  const twentyPrompts=["elephant","bicycle","taj mahal","mango","cricket","umbrella","telephone","mountain","train","pizza","tiger","camera","rainbow","clock","guitar","rocket","penguin","waterfall","library","football"];
+  const twentyDeck=[
+    {w:"elephant",a:{living:true,animal:true,food:false,place:false,manmade:false,bigger:true,water:false,transport:false}},
+    {w:"bicycle",a:{living:false,animal:false,food:false,place:false,manmade:true,bigger:false,water:false,transport:true}},
+    {w:"Taj Mahal",a:{living:false,animal:false,food:false,place:true,manmade:true,bigger:true,water:false,transport:false}},
+    {w:"mango",a:{living:true,animal:false,food:true,place:false,manmade:false,bigger:false,water:false,transport:false}},
+    {w:"cricket",a:{living:false,animal:false,food:false,place:false,manmade:false,bigger:false,water:false,transport:false}},
+    {w:"umbrella",a:{living:false,animal:false,food:false,place:false,manmade:true,bigger:false,water:false,transport:false}},
+    {w:"train",a:{living:false,animal:false,food:false,place:false,manmade:true,bigger:true,water:false,transport:true}},
+    {w:"tiger",a:{living:true,animal:true,food:false,place:false,manmade:false,bigger:true,water:false,transport:false}},
+    {w:"pizza",a:{living:false,animal:false,food:true,place:false,manmade:true,bigger:false,water:false,transport:false}},
+    {w:"ocean",a:{living:false,animal:false,food:false,place:true,manmade:false,bigger:true,water:true,transport:false}},
+    {w:"car",a:{living:false,animal:false,food:false,place:false,manmade:true,bigger:true,water:false,transport:true}},
+    {w:"dog",a:{living:true,animal:true,food:false,place:false,manmade:false,bigger:false,water:false,transport:false}},
+    {w:"school",a:{living:false,animal:false,food:false,place:true,manmade:true,bigger:true,water:false,transport:false}},
+    {w:"banana",a:{living:true,animal:false,food:true,place:false,manmade:false,bigger:false,water:false,transport:false}},
+    {w:"airplane",a:{living:false,animal:false,food:false,place:false,manmade:true,bigger:true,water:false,transport:true}}
+  ];
   function launchTwenty(){
-    showSimple("❓ 20 Questions","Think of an object, animal or place. Ask up to 20 yes/no questions; then make a guess.",'<p class="text-sm">Choose a secret word for the bot to guess, or let the bot choose and you ask questions.</p><div class="grid grid-cols-2 gap-2"><button id="twenty-human" class="primary rounded-xl py-3">I guess</button><button id="twenty-bot" class="bg-slate-700 rounded-xl py-3">Bot guesses</button></div>');
-    $id("twenty-human").onclick=()=>{
-      let word=twentyPrompts[Math.floor(Math.random()*twentyPrompts.length)],count=0;
-      $id("pg-simple-play").innerHTML='<p class="font-bold">Ask a yes/no question</p><input id="twenty-q" class="field" placeholder="Is it alive?"><div class="grid grid-cols-2 gap-2"><button id="twenty-yes" class="primary rounded-xl py-3">Yes</button><button id="twenty-no" class="bg-slate-700 rounded-xl py-3">No</button></div><p id="twenty-count" class="text-center text-sm">0 / 20 questions</p><input id="twenty-guess" class="field" placeholder="Your final guess"><button id="twenty-submit" class="primary w-full rounded-xl py-3">Submit guess</button><p id="twenty-feedback" class="text-center"></p>';
-      ["yes","no"].forEach(ans=>$id("twenty-"+ans).onclick=()=>{if(count>=20)return;count++;$id("twenty-count").textContent=count+" / 20 questions used. (Answer key is local; think of a clue yourself.)";});
-      $id("twenty-submit").onclick=()=>{$id("twenty-feedback").textContent=$id("twenty-guess").value.trim().toLowerCase()===word?"Correct! 🎉":"The secret word was: "+word;};
-    };
-    $id("twenty-bot").onclick=()=>{
-      const word=prompt("Enter a secret word for the bot to guess (keep it hidden):");if(!word)return;
-      const guesses=["animal","food","place","vehicle","object","sport","fruit","technology"];
-      let i=0;
-      $id("pg-simple-play").innerHTML='<p class="font-bold">Bot question '+(i+1)+': Is it a/an '+guesses[i]+'?</p><div class="grid grid-cols-2 gap-2"><button id="twenty-bot-yes" class="primary rounded-xl py-3">Yes</button><button id="twenty-bot-no" class="bg-slate-700 rounded-xl py-3">No</button></div><p id="twenty-bot-result" class="text-center mt-3"></p>';
-      const ask=()=>{$id("pg-simple-play").querySelector("p").textContent="Bot question "+(i+1)+": Is it a/an "+guesses[i%guesses.length]+"?";};
-      ["yes","no"].forEach(a=>$id("twenty-bot-"+a).onclick=()=>{i++;if(i>=20){$id("twenty-bot-result").textContent="Bot's guess: "+word+" 🤖";}else ask();});
+    showSimple("❓ 20 Questions","The app picks a secret word. Ask one of the 20 yes/no questions, then guess it.",'<button id="twenty-start" class="primary w-full rounded-xl py-3">Start guessing</button>');
+    $id("twenty-start").onclick=()=>{
+      const item=twentyDeck[Math.floor(Math.random()*twentyDeck.length)],keys=[["Is it alive?","living"],["Is it an animal?","animal"],["Can you eat it?","food"],["Is it a place?","place"],["Is it made by humans?","manmade"],["Is it bigger than a person?","bigger"],["Is it related to water?","water"],["Can it be used for transport?","transport"]];
+      let asked=0,used=new Set();
+      const render=()=>{
+        const available=keys.filter(k=>!used.has(k[1]));
+        $id("pg-simple-play").innerHTML='<p class="text-sm text-center">Questions used: '+asked+'/20</p><div class="grid gap-2">'+available.map(k=>'<button class="twenty-question text-left rounded-xl bg-slate-900 p-3 text-sm" data-key="'+k[1]+'">'+k[0]+'</button>').join("")+'</div><div class="panel mt-3"><label class="block text-sm">Your guess<input id="twenty-guess" class="field" placeholder="What is the secret word?"></label><button id="twenty-submit" class="primary w-full rounded-xl py-3 mt-3">Check guess</button></div><p id="twenty-feedback" class="text-center mt-3"></p>';
+        document.querySelectorAll(".twenty-question").forEach(b=>b.onclick=()=>{if(asked>=20)return;asked++;used.add(b.dataset.key);$id("twenty-feedback").textContent=b.textContent+" "+(item.a[b.dataset.key]?"Yes":"No");renderQuestionCount();});
+        $id("twenty-submit").onclick=()=>{$id("twenty-feedback").textContent=$id("twenty-guess").value.trim().toLowerCase()===item.w.toLowerCase()?"Correct! 🎉":"Not quite. The word was "+item.w+".";document.querySelectorAll(".twenty-question,#twenty-submit").forEach(b=>b.disabled=true);};
+      };
+      const renderQuestionCount=()=>{const p=$id("pg-simple-play").querySelector("p");if(p)p.textContent="Questions used: "+asked+"/20";};
+      render();
     };
   }
   const identityDeck=["Mahatma Gandhi","Albert Einstein","Virat Kohli","A famous chef","A movie director","A doctor","A school teacher","A cricket umpire","A pilot","A singer","A scientist","A freedom fighter","A detective","A photographer","A footballer","A painter"];
