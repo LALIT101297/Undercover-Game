@@ -132,6 +132,18 @@
       <p class="text-slate-400 text-xs sm:text-sm mt-0.5">Pass & Play + Online Multiplayer Game</p>
     </header>
 
+    <details class="mb-4 bg-slate-800/70 border border-slate-700/80 rounded-2xl px-4 py-3">
+      <summary class="cursor-pointer list-none flex items-center justify-between text-sm font-bold text-slate-200">
+        <span>How to play</span><span class="text-indigo-300 text-xs">Quick guide +</span>
+      </summary>
+      <div class="grid gap-3 mt-3 text-xs text-slate-300">
+        <div class="flex gap-3"><span class="text-lg">🕵️</span><p><b class="text-white">1. Get your secret word</b><br>Pass the phone around. Each player privately checks their word. One or more players may be imposters.</p></div>
+        <div class="flex gap-3"><span class="text-lg">💬</span><p><b class="text-white">2. Give a clue</b><br>Take turns giving a short clue without saying the actual word.</p></div>
+        <div class="flex gap-3"><span class="text-lg">🗳️</span><p><b class="text-white">3. Discuss and vote</b><br>Find who has a different word—or is bluffing. Vote for the suspected imposter.</p></div>
+        <div class="flex gap-3"><span class="text-lg">🏆</span><p><b class="text-white">4. Reveal and score</b><br>Catch all imposters to win as citizens. If an imposter survives, the imposters win.</p></div>
+      </div>
+    </details>
+
     <!-- Main Mode Switcher (Offline vs Online) -->
     <div id="mode-switcher-bar" class="grid grid-cols-2 gap-2 p-1.5 bg-slate-800/90 border border-slate-700/80 rounded-2xl mb-4 shadow-md">
       <button type="button" id="tab-offline-mode" class="py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm bg-indigo-600 text-white shadow transition flex items-center justify-center gap-1.5">
@@ -518,7 +530,7 @@
   </div>
 
   <footer class="text-center text-xs text-slate-500 py-3 mt-4">
-    Undercover Imposter - v2.8 (Player Hub + Saved Progress)
+    Undercover Imposter - v2.9 (Player Hub + Saved Progress + Quick Guide)
   </footer>
 
   <script>
@@ -1599,6 +1611,7 @@
       }
       errEl.classList.add("hidden");
       customPairs.push({ majority: maj, imposter: imp });
+      saveGameData();
       document.getElementById("input-custom-majority").value = "";
       document.getElementById("input-custom-imposter").value = "";
       Sound.select();
