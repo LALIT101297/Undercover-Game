@@ -463,35 +463,78 @@
 
   // Snakes & Ladders: local hot-seat players and optional bot seats.
   const snlJumps={4:14,9:31,17:7,20:38,28:84,40:59,51:67,54:34,62:19,63:81,64:60,71:91,87:24,93:73,95:75,99:78};
-  let snlPlayers=[],snlTurn=0,snlDone=false;
+  let snlPlayers=[],snlTurn=0,snlDone=false,snlRolling=false,snlLastRoll=0,snlMessage="";
+  const diceFaces=["⚀","⚁","⚂","⚃","⚄","⚅"];
+  const wait=ms=>new Promise(resolve=>window.setTimeout(resolve,ms));
   function snlDraw(){
     const board=$id("pg-snl-board");board.innerHTML="";
-    for(let row=9;row>=0;row--){const nums=Array.from({length:10},(_,i)=>row%2===0?row*10+i+1:row*10+10-i);nums.forEach(n=>{const cell=document.createElement("div");cell.className="aspect-square rounded-md bg-slate-800 border border-white/10 flex flex-col items-center justify-center text-[9px]";cell.innerHTML='<span>'+n+'</span><b class="text-[10px]">'+snlPlayers.filter(p=>p.pos===n).map(p=>p.name[0]).join("")+'</b>';if(snlJumps[n])cell.classList.add(snlJumps[n]>n?"bg-emerald-900":"bg-rose-950");board.appendChild(cell);});}
-    const controls=$id("pg-snl-controls");controls.innerHTML=snlPlayers.map((p,i)=>'<p class="text-xs py-1">'+p.name+': '+p.pos+'/100 '+(p.bot?"🤖":"👤")+'</p>').join("");
-    if(!snlDone){const p=snlPlayers[snlTurn];$id("pg-snl-status").textContent=p.name+"'s turn";const b=document.createElement("button");b.className="primary w-full rounded-xl py-3 font-bold";b.textContent="🎲 Roll dice";b.onclick=snlRoll;controls.appendChild(b);}
+    for(let row=9;row>=0;row--){const nums=Array.from({length:10},(_,i)=>row%2===0?row*10+i+1:row*10+10-i);nums.forEach(n=>{
+      const cell=document.createElement("div");cell.className="aspect-square rounded-md border border-white/10 flex flex-col items-center justify-center text-[9px] relative overflow-hidden "+(snlJumps[n]?(snlJumps[n]>n?"bg-emerald-900":"bg-rose-950"):"bg-slate-800");
+      const jump=snlJumps[n],players=snlPlayers.filter(p=>p.pos===n);
+      cell.innerHTML='<span class="font-bold">'+n+'</span>'+(jump?'<b class="text-[10px]">'+(jump>n?'🪜 ↑'+jump:'🐍 ↓'+jump)+'</b>':'')+(players.length?'<span class="text-[10px]">'+players.map(p=>p.bot?'🤖':'🔵').join("")+'</span>':'');
+      board.appendChild(cell);
+    });}
+    const controls=$id("pg-snl-controls");
+    controls.innerHTML=snlPlayers.map(p=>'<p class="text-xs py-1">'+p.name+': '+p.pos+'/100 '+(p.bot?"🤖":"👤")+'</p>').join("")+'<div class="rounded-xl bg-slate-900/80 border border-white/10 p-3 text-center"><div class="text-xs text-slate-400">LAST DICE ROLL</div><div class="text-5xl my-1">'+(snlLastRoll?diceFaces[snlLastRoll-1]:'🎲')+'</div><div class="text-sm font-bold">'+(snlMessage||"Ready to roll")+'</div></div>';
+    if(!snlDone&&!snlRolling&&snlPlayers.length){const p=snlPlayers[snlTurn],btn=document.createElement("button");btn.className="primary w-full rounded-xl py-3 font-bold mt-2";btn.textContent=p.bot?"🤖 Bot turn…":"🎲 Roll dice";btn.disabled=p.bot;btn.onclick=snlRoll;controls.appendChild(btn);}
+    if(snlDone){const again=document.createElement("button");again.className="primary w-full rounded-xl py-3 mt-2";again.textContent="Play again";again.onclick=launchSnl;controls.appendChild(again);}
+    if(snlPlayers.length&&!snlDone)$id("pg-snl-status").textContent=snlRolling?"Moving…":snlPlayers[snlTurn].name+"'s turn";
   }
-  function snlRoll(){if(snlDone)return;const p=snlPlayers[snlTurn],d=1+Math.floor(Math.random()*6);let msg=p.name+" rolled "+d+". ";if(p.pos+d<=100){p.pos+=d;if(snlJumps[p.pos]){msg+=snlJumps[p.pos]>p.pos?"Ladder! ":"Snake! ";p.pos=snlJumps[p.pos];}}else msg+="Need exact roll to reach 100. ";if(p.pos===100){snlDone=true;msg+=p.name+" wins! 🏆";}$id("pg-snl-status").textContent=msg;if(!snlDone)snlTurn=(snlTurn+1)%snlPlayers.length;snlDraw();if(!snlDone&&snlPlayers[snlTurn].bot)window.setTimeout(snlRoll,650);}
-  function launchSnl(){homeView.classList.add("hidden");$id("pg-snl-game").classList.remove("hidden");snlPlayers=[];snlTurn=0;snlDone=false;$id("pg-snl-board").innerHTML="";$id("pg-snl-status").textContent="Choose players";$id("pg-snl-controls").innerHTML='<label class="block text-sm">Players (2–4)<select id="snl-count" class="field"><option>2</option><option>3</option><option>4</option></select></label><label class="block text-sm">Bot opponents<select id="snl-bots" class="field"><option value="0">None · Pass & Play</option><option value="1">1 bot</option><option value="2">2 bots</option><option value="3">3 bots</option></select></label><button id="snl-begin" class="primary w-full rounded-xl py-3">Start game</button>';$id("snl-begin").onclick=()=>{const n=Number($id("snl-count").value),bots=Math.min(n-1,Number($id("snl-bots").value));snlPlayers=Array.from({length:n},(_,i)=>({name:"Player "+(i+1),pos:0,bot:i>=n-bots}));snlTurn=0;snlDone=false;snlDraw();};}
+  async function snlRoll(){
+    if(snlDone||snlRolling||!snlPlayers.length)return;
+    snlRolling=true;const p=snlPlayers[snlTurn],d=1+Math.floor(Math.random()*6);snlLastRoll=d;snlMessage=p.name+" rolled "+d;snlDraw();await wait(550);
+    if(p.pos+d<=100){for(let step=0;step<d;step++){p.pos++;snlMessage=p.name+" moved to "+p.pos;snlDraw();await wait(170);}
+      if(snlJumps[p.pos]){const from=p.pos,to=snlJumps[from];snlMessage=to>from?"🪜 Ladder! "+from+" → "+to:"🐍 Snake! "+from+" → "+to;snlDraw();await wait(900);p.pos=to;}
+    }else snlMessage="Need an exact roll to reach 100";
+    if(p.pos===100){snlDone=true;snlMessage="🏆 "+p.name+" wins!";}
+    snlRolling=false;if(!snlDone)snlTurn=(snlTurn+1)%snlPlayers.length;snlDraw();
+    if(!snlDone&&snlPlayers[snlTurn].bot)window.setTimeout(snlRoll,650);
+  }
+  function launchSnl(){
+    homeView.classList.add("hidden");$id("pg-snl-game").classList.remove("hidden");snlPlayers=[];snlTurn=0;snlDone=false;snlRolling=false;snlLastRoll=0;snlMessage="";
+    $id("pg-snl-board").innerHTML="";$id("pg-snl-status").textContent="Choose players";
+    $id("pg-snl-controls").innerHTML='<label class="block text-sm">Players (2–4)<select id="snl-count" class="field"><option>2</option><option>3</option><option>4</option></select></label><label class="block text-sm">Bot opponents<select id="snl-bots" class="field"><option value="0">None · Pass & Play</option><option value="1">1 bot</option><option value="2">2 bots</option><option value="3">3 bots</option></select></label><button id="snl-begin" class="primary w-full rounded-xl py-3">Start game</button>';
+    $id("snl-begin").onclick=()=>{const n=Number($id("snl-count").value),bots=Math.min(n-1,Number($id("snl-bots").value));snlPlayers=Array.from({length:n},(_,i)=>({name:"Player "+(i+1),pos:1,bot:i>=n-bots}));snlTurn=0;snlDone=false;snlLastRoll=0;snlMessage="Game started";snlDraw();};
+  }
   document.getElementById("pg-snl-card").onclick=launchSnl;
 
-  // Ludo local board: four tokens per seat, classic 52-step loop plus home lane.
-  const ludoColors=["#ef4444","#22c55e","#eab308","#3b82f6"];
-  let ludoPlayers=[],ludoTurn=0,ludoDice=0,ludoFinished=false;
+  const ludoColors=["#ef4444","#22c55e","#eab308","#3b82f6"],ludoStarts=[0,13,26,39],ludoSafe=[0,8,13,21,26,34,39,47];
+  let ludoPlayers=[],ludoTurn=0,ludoDice=0,ludoFinished=false,ludoRolling=false,ludoLastMessage="";
   function ludoRender(){
-    $id("pg-ludo-players").innerHTML=ludoPlayers.map((p,i)=>'<div class="rounded-xl p-2 text-center text-xs" style="background:'+ludoColors[i]+'22;border:1px solid '+ludoColors[i]+'66">'+p.name+'<br><b>'+p.tokens.map(t=>t<0?"🏠":t>=56?"🏁":t+1).join(" · ")+'</b></div>').join("");
-    const track=$id("pg-ludo-track");track.innerHTML="";for(let i=0;i<52;i++){const c=document.createElement("div");c.className="aspect-square rounded bg-slate-800 border border-white/10 text-[9px] flex items-center justify-center";const occupants=[];ludoPlayers.forEach((p,pi)=>p.tokens.forEach((t,ti)=>{if(t>=0&&t<52&&((t+pi*13)%52)===i)occupants.push(String(pi+1));}));c.textContent=occupants.join("")||((i%13===0)?"★":"");track.appendChild(c);}
-    $id("pg-ludo-status").textContent=ludoFinished?"Game finished":ludoPlayers[ludoTurn].name+"'s turn"+(ludoDice?" · Dice "+ludoDice:"");
-    const controls=$id("pg-ludo-controls");controls.innerHTML="";
-    if(ludoFinished)return;
-    const roll=document.createElement("button");roll.className="primary w-full rounded-xl py-3 font-bold";roll.textContent=ludoDice?"Dice: "+ludoDice:"🎲 Roll dice";roll.disabled=!!ludoDice||ludoPlayers[ludoTurn].bot;roll.onclick=()=>{ludoDice=1+Math.floor(Math.random()*6);ludoRender();};controls.appendChild(roll);
-    ludoPlayers[ludoTurn].tokens.forEach((t,i)=>{const b=document.createElement("button");b.className="w-full rounded-xl py-2 bg-slate-800 text-sm";b.textContent="Move token "+(i+1)+(t<0?" (yard)": " (position "+(t+1)+")");b.disabled=ludoPlayers[ludoTurn].bot||!ludoDice||!(t<0?ludoDice===6:t+ludoDice<=56);b.onclick=()=>ludoMove(i);controls.appendChild(b);});
-    const hint=document.createElement("p");hint.className="text-[10px] text-slate-400 text-center";hint.textContent="A six brings a token out. Reach 56 exactly to finish. Safe stars cannot be captured.";controls.appendChild(hint);
+    $id("pg-ludo-players").innerHTML=ludoPlayers.map((p,i)=>'<div class="rounded-xl p-2 text-center text-xs" style="background:'+ludoColors[i]+'22;border:1px solid '+ludoColors[i]+'66">'+p.name+(p.bot?' 🤖':' 👤')+'<br><b>'+p.tokens.map(t=>t<0?'🏠':t>=56?'🏁':t+1).join(' · ')+'</b></div>').join("");
+    const track=$id("pg-ludo-track");track.innerHTML="";
+    for(let i=0;i<52;i++){const c=document.createElement("div");c.className="aspect-square rounded bg-slate-800 border border-white/10 text-[10px] flex flex-col items-center justify-center";const occupants=[];ludoPlayers.forEach((p,pi)=>p.tokens.forEach(t=>{if(t>=0&&t<52&&(ludoStarts[pi]+t)%52===i)occupants.push('<span style="color:'+ludoColors[pi]+'">●</span>');}));c.innerHTML=occupants.join("")||(ludoSafe.includes(i)?"★":"");if(ludoStarts.includes(i))c.style.borderColor="#facc15";track.appendChild(c);}
+    if(!ludoPlayers.length)return;
+    $id("pg-ludo-status").textContent=ludoFinished?ludoLastMessage:ludoPlayers[ludoTurn].name+"'s turn"+(ludoDice?" · Dice "+ludoDice:"")+(ludoLastMessage?" · "+ludoLastMessage:"");
+    const controls=$id("pg-ludo-controls");controls.innerHTML='<div class="rounded-xl bg-slate-900/80 border border-white/10 p-3 text-center"><div class="text-xs text-slate-400">DICE</div><div class="text-5xl my-1">'+(ludoDice?diceFaces[ludoDice-1]:(ludoLastMessage||"🎲"))+'</div></div>';
+    if(ludoFinished){const again=document.createElement("button");again.className="primary w-full rounded-xl py-3";again.textContent="Play again";again.onclick=launchLudo;controls.appendChild(again);return;}
+    const roll=document.createElement("button");roll.className="primary w-full rounded-xl py-3 font-bold";roll.textContent=ludoPlayers[ludoTurn].bot?"🤖 Bot turn…":(ludoDice?"Choose a token":"🎲 Roll dice");roll.disabled=!!ludoDice||ludoRolling||ludoPlayers[ludoTurn].bot;roll.onclick=ludoHumanRoll;controls.appendChild(roll);
+    ludoPlayers[ludoTurn].tokens.forEach((t,i)=>{const btn=document.createElement("button");btn.className="w-full rounded-xl py-2 bg-slate-800 text-sm";btn.textContent="Move token "+(i+1)+(t<0?" (yard)":t>=56?" (home)":" (position "+(t+1)+")");btn.disabled=ludoPlayers[ludoTurn].bot||!ludoDice||!(t<0?ludoDice===6:t+ludoDice<=56);btn.onclick=()=>ludoMove(i);controls.appendChild(btn);});
+    const hint=document.createElement("p");hint.className="text-[10px] text-slate-400 text-center";hint.textContent="Roll 6 to enter. Land on an opponent to send it home. Safe stars protect tokens. Exact roll to finish.";controls.appendChild(hint);
   }
-  function ludoMove(index){const p=ludoPlayers[ludoTurn],old=p.tokens[index];if(old<0)p.tokens[index]=0;else p.tokens[index]+=ludoDice;const global=(p.tokens[index]+ludoTurn*13)%52;
-    if(p.tokens[index]<52&&![0,8,13,21,26,34,39,47].includes(global)){ludoPlayers.forEach((other,pi)=>{if(pi!==ludoTurn)other.tokens=other.tokens.map(t=>t>=0&&t<52&&((t+pi*13)%52)===global?-1:t);});}
-    ludoDice=0;if(p.tokens.every(t=>t===56)){ludoFinished=true;$id("pg-ludo-status").textContent=p.name+" wins! 🏆";}else if(arguments.length)ludoTurn=(ludoTurn+1)%ludoPlayers.length;ludoRender();
+  function ludoHumanRoll(){if(ludoRolling||ludoDice||ludoFinished)return;ludoDice=1+Math.floor(Math.random()*6);ludoLastMessage="Rolled "+ludoDice;ludoRender();}
+  async function ludoMove(index){
+    if(!ludoDice||ludoFinished||ludoRolling)return;ludoRolling=true;const p=ludoPlayers[ludoTurn],roll=ludoDice,old=p.tokens[index];p.tokens[index]=old<0?0:old+roll;ludoLastMessage=p.name+" moved token "+(index+1);ludoRender();await wait(450);
+    const global=(ludoStarts[ludoTurn]+p.tokens[index])%52;let captured=false;
+    if(p.tokens[index]<52&&!ludoSafe.includes(global)){ludoPlayers.forEach((other,pi)=>{if(pi!==ludoTurn)other.tokens=other.tokens.map(t=>{if(t>=0&&t<52&&(ludoStarts[pi]+t)%52===global){captured=true;return -1;}return t;});});}
+    if(captured)ludoLastMessage="Capture! Bonus turn";
+    ludoDice=0;if(p.tokens.every(t=>t===56)){ludoFinished=true;ludoLastMessage="🏆 "+p.name+" wins!";}
+    else if(roll!==6&&!captured)ludoTurn=(ludoTurn+1)%ludoPlayers.length;
+    ludoRolling=false;ludoRender();if(!ludoFinished&&ludoPlayers[ludoTurn].bot)window.setTimeout(ludoBotTurn,550);
   }
-  function launchLudo(){homeView.classList.add("hidden");$id("pg-ludo-game").classList.remove("hidden");ludoPlayers=[];ludoTurn=0;ludoDice=0;ludoFinished=false;$id("pg-ludo-players").innerHTML="";$id("pg-ludo-status").textContent="Choose players";$id("pg-ludo-controls").innerHTML='<label class="block text-sm">Players (2–4)<select id="ludo-count" class="field"><option>2</option><option>3</option><option>4</option></select></label><label class="block text-sm">Bot opponents<select id="ludo-bots" class="field"><option value="0">None · Pass & Play</option><option value="1">1 bot</option><option value="2">2 bots</option><option value="3">3 bots</option></select></label><button id="ludo-begin" class="primary w-full rounded-xl py-3">Start game</button>';$id("ludo-track").innerHTML="";$id("ludo-begin").onclick=()=>{const n=Number($id("ludo-count").value),bots=Math.min(n-1,Number($id("ludo-bots").value));ludoPlayers=Array.from({length:n},(_,i)=>({name:"Player "+(i+1),tokens:[-1,-1,-1,-1],bot:i>=n-bots}));ludoTurn=0;ludoDice=0;ludoFinished=false;ludoRender();};}
+  async function ludoBotTurn(){
+    if(ludoFinished||ludoRolling||!ludoPlayers.length||!ludoPlayers[ludoTurn].bot)return;
+    ludoRolling=true;await wait(350);ludoDice=1+Math.floor(Math.random()*6);ludoLastMessage="Bot rolled "+ludoDice;ludoRolling=false;ludoRender();await wait(500);
+    const p=ludoPlayers[ludoTurn],moves=p.tokens.map((t,i)=>({t,i})).filter(x=>x.t<0?ludoDice===6:x.t+ludoDice<=56);
+    if(!moves.length){ludoDice=0;ludoTurn=(ludoTurn+1)%ludoPlayers.length;ludoRender();if(ludoPlayers[ludoTurn].bot)window.setTimeout(ludoBotTurn,500);return;}
+    moves.sort((a,b)=>b.t-a.t);ludoMove(moves[0].i);
+  }
+  function launchLudo(){
+    homeView.classList.add("hidden");$id("pg-ludo-game").classList.remove("hidden");ludoPlayers=[];ludoTurn=0;ludoDice=0;ludoFinished=false;ludoRolling=false;ludoLastMessage="";
+    $id("pg-ludo-players").innerHTML="";$id("pg-ludo-status").textContent="Choose players";
+    $id("pg-ludo-controls").innerHTML='<label class="block text-sm">Players (2–4)<select id="ludo-count" class="field"><option>2</option><option>3</option><option>4</option></select></label><label class="block text-sm">Bot opponents<select id="ludo-bots" class="field"><option value="0">None · Pass & Play</option><option value="1">1 bot</option><option value="2">2 bots</option><option value="3">3 bots</option></select></label><button id="ludo-begin" class="primary w-full rounded-xl py-3">Start game</button>';$id("ludo-track").innerHTML="";
+    $id("ludo-begin").onclick=()=>{const n=Number($id("ludo-count").value),bots=Math.min(n-1,Number($id("ludo-bots").value));ludoPlayers=Array.from({length:n},(_,i)=>({name:"Player "+(i+1),tokens:[-1,-1,-1,-1],bot:i>=n-bots}));ludoTurn=0;ludoDice=0;ludoFinished=false;ludoRender();if(ludoPlayers[0].bot)window.setTimeout(ludoBotTurn,500);};
+  }
   document.getElementById("pg-ludo-card").onclick=launchLudo;
 
     let mode = "login";
