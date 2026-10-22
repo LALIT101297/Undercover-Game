@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Undercover Imposter</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -864,25 +864,19 @@
     // =====================================================
     // ONLINE MULTIPLAYER ENGINE
     // =====================================================
-    let peer = null;
     let isOnlineHost = false;
     let currentRoomCode = "";
     let myPlayerId = "";
     let myPlayerName = "";
-    let hostConnection = null;
-    let guestConnections = [];
     let onlineImposterCountSetting = 1;
-
-    let onlineRoomState = {
-      status: "lobby",
-      categoryName: "Desi Special",
-      imposterCount: 1,
-      majorityWord: "",
-      imposterWord: "",
-      imposterIds: [],
-      players: [],
-      clues: []
-    };
+    let onlinePollTimer = null;
+    let onlineAuthSession = null;
+    const SUPABASE_URL = "https://bzrostyxnljehnxfdene.supabase.co";
+    const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_4oRADljIbDPFQsQwQMEB4w_LMrppdLQ";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
+    });
+    let onlineRoomState = { status:"lobby", categoryName:"Desi Special", imposterCount:1, majorityWord:"", imposterWord:"", imposterIds:[], players:[], clues:[] };
 
     const onlineNameInput = document.getElementById("online-player-name");
     const onlineCodeInput = document.getElementById("online-room-code-input");
@@ -894,192 +888,110 @@
       onlineMenuStatus.className = `mt-3 text-xs text-center font-semibold ${isError ? "text-rose-400" : "text-amber-300 animate-pulse"}`;
       onlineMenuStatus.classList.remove("hidden");
     }
+    async function ensureOnlineAuth() {
+      const { data: current } = await supabase.auth.getSession();
+      if (current.session) onlineAuthSession = current.session;
+      else {
+        const { data, error } = await supabase.auth.signInAnonymously();
+        if (error) throw new Error("Guest sign-in is not enabled yet. Enable Anonymous Sign-Ins in Supabase Authentication settings, then retry.");
+        onlineAuthSession = data.session;
+      }
+      myPlayerId = onlineAuthSession.user.id;
+      return onlineAuthSession;
+    }
+    async function onlineAction(action, payload = {}) {
+      const session = await ensureOnlineAuth();
+      const { data, error } = await supabase.functions.invoke("undercover-game", { body: { action, roomCode: currentRoomCode, ...payload } });
+      if (error) {
+        let message = error.message || "Online request failed.";
+        try { const context = await error.context.json(); if (context.error) message = context.error; } catch (_) {}
+        throw new Error(message);
+      }
+      if (data?.error) throw new Error(data.error);
+      return data;
+    }
+    function applyOnlineResponse(data) {
+      if (data.state) onlineRoomState = data.state;
+      if (data.isHost !== undefined) isOnlineHost = data.isHost;
+      if (data.roomCode) currentRoomCode = data.roomCode;
+      if (onlineRoomState.status === "result") {
+        renderOnlineResultScreen();
+        showScreen(screenResult);
+      } else syncClientScreenWithState();
+    }
+    async function refreshOnlineRoom() {
+      if (!currentRoomCode || !onlineAuthSession) return;
+      try {
+        const data = await onlineAction("state");
+        applyOnlineResponse(data);
+      } catch (e) {
+        if (/not a member|not found|expired/i.test(e.message)) {
+          stopOnlinePolling();
+          showToast(e.message);
+          showScreen(screenOnlineMenu);
+        }
+      }
+    }
+    function startOnlinePolling() {
+      stopOnlinePolling();
+      onlinePollTimer = setInterval(refreshOnlineRoom, 1800);
+    }
+    function stopOnlinePolling() {
+      if (onlinePollTimer) clearInterval(onlinePollTimer);
+      onlinePollTimer = null;
+    }
 
     const btnOnlineImp1 = document.getElementById("btn-online-imp-1");
     const btnOnlineImp2 = document.getElementById("btn-online-imp-2");
-
     function updateOnlineImposterSelectorUI() {
       const canUseTwo = onlineRoomState.players.length >= 6;
-      if (!canUseTwo && onlineImposterCountSetting === 2) {
-        onlineImposterCountSetting = 1;
-      }
+      if (!canUseTwo && onlineImposterCountSetting === 2) onlineImposterCountSetting = 1;
       btnOnlineImp2.disabled = !canUseTwo;
-      document.getElementById("online-imposter-lock-hint").textContent = canUseTwo
-        ? "2 Imposters Unlocked!"
-        : "Requires 6+ Players for 2";
-
-      btnOnlineImp1.className = onlineImposterCountSetting === 1
-        ? "py-1.5 px-2 rounded-lg text-xs font-bold bg-indigo-600 text-white"
-        : "py-1.5 px-2 rounded-lg text-xs font-bold bg-slate-800 text-slate-300";
-
-      if (!canUseTwo) {
-        btnOnlineImp2.className = "py-1.5 px-2 rounded-lg text-xs font-bold bg-slate-800 text-slate-500 cursor-not-allowed";
-      } else {
-        btnOnlineImp2.className = onlineImposterCountSetting === 2
-          ? "py-1.5 px-2 rounded-lg text-xs font-bold bg-rose-600 text-white"
-          : "py-1.5 px-2 rounded-lg text-xs font-bold bg-slate-800 text-slate-300";
-      }
+      document.getElementById("online-imposter-lock-hint").textContent = canUseTwo ? "2 Imposters Unlocked!" : "Requires 6+ Players for 2";
+      btnOnlineImp1.className = onlineImposterCountSetting === 1 ? "py-1.5 px-2 rounded-lg text-xs font-bold bg-indigo-600 text-white" : "py-1.5 px-2 rounded-lg text-xs font-bold bg-slate-800 text-slate-300";
+      btnOnlineImp2.className = !canUseTwo ? "py-1.5 px-2 rounded-lg text-xs font-bold bg-slate-800 text-slate-500 cursor-not-allowed" : (onlineImposterCountSetting === 2 ? "py-1.5 px-2 rounded-lg text-xs font-bold bg-rose-600 text-white" : "py-1.5 px-2 rounded-lg text-xs font-bold bg-slate-800 text-slate-300");
     }
-
-    btnOnlineImp1.addEventListener("click", () => {
-      Sound.click();
-      onlineImposterCountSetting = 1;
-      updateOnlineImposterSelectorUI();
-    });
-
+    btnOnlineImp1.addEventListener("click", () => { Sound.click(); onlineImposterCountSetting = 1; updateOnlineImposterSelectorUI(); });
     btnOnlineImp2.addEventListener("click", () => {
-      if (onlineRoomState.players.length < 6) {
-        Sound.error();
-        showToast("Need at least 6 players in the room to select 2 Imposters!");
-        return;
-      }
-      Sound.click();
-      onlineImposterCountSetting = 2;
-      updateOnlineImposterSelectorUI();
+      if (onlineRoomState.players.length < 6) { Sound.error(); showToast("Need at least 6 players for 2 Imposters!"); return; }
+      Sound.click(); onlineImposterCountSetting = 2; updateOnlineImposterSelectorUI();
     });
 
-    document.getElementById("btn-create-room").addEventListener("click", () => {
-      myPlayerName = onlineNameInput.value.trim() || "Host";
-      isOnlineHost = true;
-      currentRoomCode = String(Math.floor(1000 + Math.random() * 9000));
-      const peerId = "undercover-imposter-v26-" + currentRoomCode;
-
-      showOnlineStatus("Creating online room...");
-      if (peer) peer.destroy();
-
-      peer = new Peer(peerId);
-      peer.on("open", (id) => {
-        myPlayerId = id;
-        guestConnections = [];
-        onlineRoomState = {
-          status: "lobby",
-          categoryName: "Desi Special",
-          imposterCount: 1,
-          majorityWord: "",
-          imposterWord: "",
-          imposterIds: [],
-          players: [{ id: myPlayerId, name: myPlayerName, wins: 0, voteId: "" }],
-          clues: []
-        };
+    document.getElementById("btn-create-room").addEventListener("click", async () => {
+      myPlayerName = onlineNameInput.value.trim().slice(0,16) || "Host";
+      showOnlineStatus("Connecting securely...");
+      try {
+        stopOnlinePolling();
+        const data = await onlineAction("create", { name: myPlayerName });
+        currentRoomCode = data.roomCode;
+        applyOnlineResponse(data);
         onlineMenuStatus.classList.add("hidden");
         onlineLobbyError.classList.add("hidden");
         Sound.reveal();
-        showScreen(screenOnlineLobby);
-        renderOnlineLobby();
-      });
-
-      peer.on("connection", (conn) => {
-        guestConnections.push(conn);
-        conn.on("data", (data) => handleHostIncomingData(conn, data));
-        conn.on("close", () => {
-          guestConnections = guestConnections.filter(c => c !== conn);
-          onlineRoomState.players = onlineRoomState.players.filter(p => p.id !== conn.peer);
-          broadcastRoomState();
-        });
-      });
-
-      peer.on("error", () => showOnlineStatus("Error creating room. Try again!", true));
+        startOnlinePolling();
+      } catch (e) { showOnlineStatus(e.message, true); }
     });
 
-    document.getElementById("btn-join-room").addEventListener("click", () => {
-      myPlayerName = onlineNameInput.value.trim() || "Player " + Math.floor(Math.random() * 90 + 10);
+    document.getElementById("btn-join-room").addEventListener("click", async () => {
+      myPlayerName = onlineNameInput.value.trim().slice(0,16) || ("Player " + Math.floor(Math.random()*90+10));
       const code = onlineCodeInput.value.trim();
-      if (code.length !== 4) {
-        Sound.error();
-        showOnlineStatus("Please enter a valid 4-digit Room Code!", true);
-        return;
-      }
-
-      isOnlineHost = false;
+      if (!/^\\d{4}$/.test(code)) { Sound.error(); showOnlineStatus("Please enter a valid 4-digit Room Code!", true); return; }
       currentRoomCode = code;
-      showOnlineStatus("Connecting to room " + code + "...");
-
-      if (peer) peer.destroy();
-      peer = new Peer();
-
-      peer.on("open", (id) => {
-        myPlayerId = id;
-        hostConnection = peer.connect("undercover-imposter-v26-" + code, { reliable: true });
-
-        hostConnection.on("open", () => {
-          onlineMenuStatus.classList.add("hidden");
-          hostConnection.send({ type: "JOIN", id: myPlayerId, name: myPlayerName });
-          Sound.reveal();
-        });
-
-        hostConnection.on("data", (data) => {
-          if (data.type === "STATE_UPDATE") {
-            onlineRoomState = data.state;
-            syncClientScreenWithState();
-          }
-        });
-
-        hostConnection.on("close", () => {
-          showToast("Host closed the room.");
-          showScreen(screenOnlineMenu);
-        });
-      });
-
-      peer.on("error", () => showOnlineStatus("Room not found! Check the 4-digit code.", true));
+      showOnlineStatus("Joining room " + code + "...");
+      try {
+        stopOnlinePolling();
+        const data = await onlineAction("join", { name: myPlayerName });
+        applyOnlineResponse(data);
+        onlineMenuStatus.classList.add("hidden");
+        Sound.reveal();
+        startOnlinePolling();
+      } catch (e) { showOnlineStatus(e.message, true); }
     });
-
-    function handleHostIncomingData(conn, data) {
-      if (!data || typeof data !== "object") return;
-      const sender = onlineRoomState.players.find(p => p.id === conn.peer);
-      if (data.type === "JOIN") {
-        if (onlineRoomState.players.length >= 8) return;
-        if (!onlineRoomState.players.find(p => p.id === conn.peer)) {
-          const safeName = String(data.name || "Player").replace(/[<>]/g, "").trim().slice(0, 16) || "Player";
-          onlineRoomState.players.push({ id: conn.peer, name: safeName, wins: 0, voteId: "" });
-        }
-        onlineLobbyError.classList.add("hidden");
-        broadcastRoomState();
-      } else if (data.type === "CLUE" && sender && onlineRoomState.status === "playing") {
-        const safeText = String(data.text || "").replace(/[<>]/g, "").trim().slice(0, 60);
-        if (!safeText) return;
-        const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        onlineRoomState.clues.push({ name: sender.name, text: safeText, time: timeStr });
-        onlineRoomState.clues = onlineRoomState.clues.slice(-100);
-        broadcastRoomState();
-      } else if (data.type === "VOTE" && sender && onlineRoomState.status === "playing") {
-        const suspectExists = onlineRoomState.players.some(p => p.id === data.suspectId);
-        if (!suspectExists || sender.voteId) return;
-        sender.voteId = data.suspectId;
-        broadcastRoomState();
-        if (onlineRoomState.players.every(p => p.voteId !== "")) finalizeOnlineRound();
-      }
-    }
-
-    // Send only each guest's own secret role and word during a live round.
-    function createGuestState(playerId) {
-      const snapshot = JSON.parse(JSON.stringify(onlineRoomState));
-      if (snapshot.status === "playing") {
-        const isImposter = (onlineRoomState.imposterIds || []).includes(playerId);
-        snapshot.imposterIds = isImposter ? [playerId] : [];
-        snapshot.majorityWord = isImposter ? "" : onlineRoomState.majorityWord;
-        snapshot.imposterWord = isImposter ? onlineRoomState.imposterWord : "";
-      }
-      return snapshot;
-    }
-
-    function broadcastRoomState() {
-      guestConnections.forEach(conn => {
-        if (conn.open) conn.send({ type: "STATE_UPDATE", state: createGuestState(conn.peer) });
-      });
-      syncClientScreenWithState();
-    }
 
     function syncClientScreenWithState() {
-      if (onlineRoomState.status === "lobby") {
-        showScreen(screenOnlineLobby);
-        renderOnlineLobby();
-      } else if (onlineRoomState.status === "playing") {
-        showScreen(screenOnlineGame);
-        renderOnlineGameScreen();
-      } else if (onlineRoomState.status === "result") {
-        renderOnlineResultScreen();
-        showScreen(screenResult);
-      }
+      if (onlineRoomState.status === "lobby") { showScreen(screenOnlineLobby); renderOnlineLobby(); }
+      else if (onlineRoomState.status === "playing") { showScreen(screenOnlineGame); renderOnlineGameScreen(); }
+      else if (onlineRoomState.status === "result") { renderOnlineResultScreen(); showScreen(screenResult); }
     }
 
     function renderOnlineLobby() {
@@ -1115,9 +1027,10 @@
       setTimeout(() => btn.textContent = "Copy Code", 1500);
     });
 
-    document.getElementById("btn-leave-room").addEventListener("click", () => {
+    document.getElementById("btn-leave-room").addEventListener("click", async () => {
       Sound.click();
-      if (peer) peer.destroy();
+      try { await onlineAction("leave"); } catch (e) { showToast(e.message); }
+      stopOnlinePolling(); currentRoomCode = ""; onlineRoomState = { status:"lobby", players:[], clues:[], imposterIds:[] };
       showScreen(screenOnlineMenu);
     });
 
@@ -1130,33 +1043,20 @@
       return indices.slice(0, count);
     }
 
-    document.getElementById("btn-online-start").addEventListener("click", () => {
+    document.getElementById("btn-online-start").addEventListener("click", async () => {
       if (onlineRoomState.players.length < 3) {
         Sound.error();
-        const needed = 3 - onlineRoomState.players.length;
-        const msg = `Need at least 3 players to start! Share code ${currentRoomCode} (${needed} more needed).`;
-        onlineLobbyError.textContent = msg;
-        onlineLobbyError.classList.remove("hidden");
-        showToast(msg);
-        return;
+        const msg = `Need at least 3 players to start! Share code ${currentRoomCode}.`;
+        onlineLobbyError.textContent = msg; onlineLobbyError.classList.remove("hidden"); showToast(msg); return;
       }
       onlineLobbyError.classList.add("hidden");
       const catKey = document.getElementById("online-category-select").value;
       const pool = getBuiltinPairs(catKey);
       const pair = pool[Math.floor(Math.random() * pool.length)];
-      const impCount = (onlineRoomState.players.length >= 6) ? onlineImposterCountSetting : 1;
-      const chosenIndices = pickRandomIndices(onlineRoomState.players.length, impCount);
-
-      onlineRoomState.status = "playing";
-      onlineRoomState.categoryName = catKey.toUpperCase();
-      onlineRoomState.imposterCount = impCount;
-      onlineRoomState.majorityWord = pair.majority;
-      onlineRoomState.imposterWord = pair.imposter;
-      onlineRoomState.imposterIds = chosenIndices.map(idx => onlineRoomState.players[idx].id);
-      onlineRoomState.clues = [];
-      onlineRoomState.players.forEach(p => p.voteId = "");
-
-      broadcastRoomState();
+      try {
+        const data = await onlineAction("start", { majorityWord:pair.majority, imposterWord:pair.imposter, categoryName:catKey.toUpperCase(), imposterCount:onlineImposterCountSetting });
+        applyOnlineResponse(data); Sound.reveal();
+      } catch (e) { onlineLobbyError.textContent=e.message; onlineLobbyError.classList.remove("hidden"); }
     });
 
     let isOnlineWordHidden = false;
@@ -1233,61 +1133,25 @@
       document.getElementById("btn-online-host-reveal").classList.toggle("hidden", !isOnlineHost);
     }
 
-    document.getElementById("online-clue-form").addEventListener("submit", (e) => {
+    document.getElementById("online-clue-form").addEventListener("submit", async (e) => {
       e.preventDefault();
       const input = document.getElementById("online-clue-input");
-      const text = input.value.trim();
-      if (!text) return;
-      input.value = "";
-      Sound.click();
-
-      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      if (isOnlineHost) {
-        onlineRoomState.clues.push({ name: myPlayerName, text, time: timeStr });
-        broadcastRoomState();
-      } else if (hostConnection && hostConnection.open) {
-        hostConnection.send({ type: "CLUE", name: myPlayerName, text });
-      }
+      const text = input.value.trim(); if (!text) return;
+      input.value = ""; Sound.click();
+      try { applyOnlineResponse(await onlineAction("clue", { text })); }
+      catch (err) { showToast(err.message); }
     });
 
-    function sendOnlineVote(suspectId) {
-      if (isOnlineHost) {
-        const me = onlineRoomState.players.find(p => p.id === myPlayerId);
-        if (me) me.voteId = suspectId;
-        broadcastRoomState();
-        if (onlineRoomState.players.every(p => p.voteId !== "")) finalizeOnlineRound();
-      } else if (hostConnection && hostConnection.open) {
-        hostConnection.send({ type: "VOTE", voterId: myPlayerId, suspectId });
-      }
+    async function sendOnlineVote(suspectId) {
+      try { applyOnlineResponse(await onlineAction("vote", { suspectId })); }
+      catch (e) { showToast(e.message); }
     }
 
-    document.getElementById("btn-online-host-reveal").addEventListener("click", () => {
-      if (isOnlineHost) finalizeOnlineRound();
+    document.getElementById("btn-online-host-reveal").addEventListener("click", async () => {
+      if (!isOnlineHost) return;
+      try { applyOnlineResponse(await onlineAction("reveal")); }
+      catch (e) { showToast(e.message); }
     });
-
-    function finalizeOnlineRound() {
-      const counts = {};
-      onlineRoomState.players.forEach(p => {
-        if (p.voteId) counts[p.voteId] = (counts[p.voteId] || 0) + 1;
-      });
-      let topSuspectId = "";
-      let maxVotes = -1;
-      Object.keys(counts).forEach(id => {
-        if (counts[id] > maxVotes) { maxVotes = counts[id]; topSuspectId = id; }
-      });
-
-      onlineRoomState.topSuspectId = topSuspectId;
-      const imposterCaught = (onlineRoomState.imposterIds || []).includes(topSuspectId);
-
-      onlineRoomState.players.forEach(p => {
-        const isImp = (onlineRoomState.imposterIds || []).includes(p.id);
-        if (imposterCaught && !isImp) p.wins++;
-        if (!imposterCaught && isImp) p.wins++;
-      });
-
-      onlineRoomState.status = "result";
-      broadcastRoomState();
-    }
 
     function renderOnlineResultScreen() {
       const impPlayers = onlineRoomState.players.filter(p => (onlineRoomState.imposterIds || []).includes(p.id));
@@ -1837,19 +1701,14 @@
       showToast("Reward video is not ready. Please try again in a moment.");
     };
 
-    document.getElementById("btn-play-again").addEventListener("click", () => {
+    document.getElementById("btn-play-again").addEventListener("click", async () => {
       Sound.click();
       if (activeGameMode === "online") {
         if (isOnlineHost) {
-          onlineRoomState.status = "lobby";
-          broadcastRoomState();
-        } else {
-          showScreen(screenOnlineLobby);
-        }
-      } else {
-        renderScoreboards();
-        showScreen(screenSetup);
-      }
+          try { applyOnlineResponse(await onlineAction("again")); startOnlinePolling(); }
+          catch (e) { showToast(e.message); }
+        } else { showScreen(screenOnlineLobby); }
+      } else { renderScoreboards(); showScreen(screenSetup); }
     });
 
     renderPlayerInputs();
