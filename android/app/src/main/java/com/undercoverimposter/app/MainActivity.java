@@ -288,7 +288,12 @@ public class MainActivity extends Activity {
 
     @Override
     public void onBackPressed() {
-        if (webView != null && webView.canGoBack()) webView.goBack();
-        else super.onBackPressed();
+        if (webView != null) {
+            webView.evaluateJavascript("window.pgHandleBack ? window.pgHandleBack() : false", value -> {
+                if (!"true".equals(value)) MainActivity.super.onBackPressed();
+            });
+        } else {
+            super.onBackPressed();
+        }
     }
 }
