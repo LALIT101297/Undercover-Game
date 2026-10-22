@@ -75,8 +75,16 @@
       </div>
       <nav class="nav"><button id="pg-home-nav">🏠 Home</button><button id="pg-profile-nav">👤 Profile</button><button id="pg-signout">↪ Sign out</button></nav>
       <p id="pg-home-message" class="text-center text-[10px] text-slate-500 mt-3"></p>
+    </section>
+    <section id="pg-profile-view" class="hidden">
+      <div class="hub-topbar"><button id="pg-profile-back">← Back to Home</button></div>
+      <div class="panel"><p class="text-xs uppercase tracking-widest text-violet-300 font-bold">Player profile</p><h2 id="pg-profile-title" class="text-2xl font-black mt-1">Your Profile</h2><p class="text-xs text-slate-400 mt-1 mb-4">Your game progress and stats</p><div id="pg-profile-stats"></div></div>
     </section>`;
   document.body.insertBefore(root, legacy);
+  const legacyNav=document.createElement("div");
+  legacyNav.className="flex items-center justify-between mb-3";
+  legacyNav.innerHTML=`<button id="pg-return-home" type="button" class="px-3 py-2 rounded-xl bg-violet-900/60 border border-violet-400/30 text-violet-100 text-xs font-bold">← Party Games Home</button><span class="text-[10px] text-slate-500">Undercover Imposter</span>`;
+  legacy.insertBefore(legacyNav,legacy.firstChild);
 
   const ttt = document.createElement("section");
   ttt.id = "pg-ttt";
@@ -376,11 +384,17 @@
     legacy.classList.add("pg-hidden"); footer.classList.add("pg-hidden"); homeView.classList.remove("hidden");
     window.scrollTo({top:0,behavior:"smooth"});
   });
+  const profileView=document.getElementById("pg-profile-view");
+  const profileStats=document.getElementById("stats-panel");
+  if(profileStats) document.getElementById("pg-profile-stats").appendChild(profileStats);
   document.getElementById("pg-profile-nav").addEventListener("click", () => {
-    homeView.classList.add("hidden"); legacy.classList.remove("pg-hidden"); footer.classList.remove("pg-hidden");
-    document.getElementById("stats-panel").classList.remove("hidden");
-    document.getElementById("stats-panel").scrollIntoView({behavior:"smooth",block:"start"});
+    homeView.classList.add("hidden"); profileView.classList.remove("hidden");
+    document.getElementById("pg-profile-title").textContent=document.getElementById("pg-player").textContent+"’s Profile";
+    if(profileStats) profileStats.classList.remove("hidden");
+    window.scrollTo({top:0,behavior:"smooth"});
   });
+  document.getElementById("pg-profile-back").addEventListener("click",()=>{profileView.classList.add("hidden");homeView.classList.remove("hidden");window.scrollTo({top:0,behavior:"smooth"});});
+  document.getElementById("pg-return-home").addEventListener("click",()=>window.pgHandleBack());
   document.getElementById("pg-signout").addEventListener("click", async () => {
     await client.auth.signOut();
     session = null; homeView.classList.add("hidden"); authView.classList.remove("hidden");
