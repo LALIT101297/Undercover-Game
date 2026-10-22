@@ -2,6 +2,8 @@ package com.undercoverimposter.app;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
@@ -35,6 +37,11 @@ public class MainActivity extends Activity {
     private RelativeLayout rootLayout;
     private boolean sdkReady = false;
     private boolean rewardedAdReady = false;
+    private final Handler adHandler = new Handler(Looper.getMainLooper());
+    private int bannerRetryCount = 0;
+    private int interstitialRetryCount = 0;
+    private int rewardedRetryCount = 0;
+    private static final int MAX_AD_RETRIES = 5;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -82,11 +89,13 @@ public class MainActivity extends Activity {
         bannerAd.setListener(new BannerAdEventListener() {
             @Override
             public void onAdLoadSucceeded(InMobiBanner ad, AdMetaInfo info) {
+                bannerRetryCount = 0;
                 Log.d(TAG, "Banner loaded");
             }
             @Override
             public void onAdLoadFailed(InMobiBanner ad, InMobiAdRequestStatus status) {
                 Log.w(TAG, "Banner failed: " + status.getMessage());
+                scheduleBannerRetry();
             }
             @Override
             public void onAdClicked(InMobiBanner ad, Map map) { }
@@ -117,11 +126,13 @@ public class MainActivity extends Activity {
                 new InterstitialAdEventListener() {
             @Override
             public void onAdLoadSucceeded(InMobiInterstitial ad, AdMetaInfo info) {
+                interstitialRetryCount = 0;
                 Log.d(TAG, "Interstitial loaded");
             }
             @Override
             public void onAdLoadFailed(InMobiInterstitial ad, InMobiAdRequestStatus status) {
                 Log.w(TAG, "Interstitial failed: " + status.getMessage());
+                scheduleInterstitialRetry();
             }
             @Override
             public void onAdFetchSuccessful(InMobiInterstitial ad, AdMetaInfo info) { }
@@ -134,11 +145,11 @@ public class MainActivity extends Activity {
             @Override
             public void onAdDisplayFailed(InMobiInterstitial ad) {
                 Log.w(TAG, "Interstitial display failed");
-                ad.load();
+                scheduleInterstitialRetry();
             }
             @Override
             public void onAdDismissed(InMobiInterstitial ad) {
-                ad.load();
+                adHandler.postDelayed(() -> { if (!isFinishing() && !isDestroyed()) ad.load(); }, 1500);
             }
             @Override
             public void onUserLeftApplication(InMobiInterstitial ad) { }
@@ -157,12 +168,14 @@ public class MainActivity extends Activity {
             @Override
             public void onAdLoadSucceeded(InMobiInterstitial ad, AdMetaInfo info) {
                 rewardedAdReady = true;
+                rewardedRetryCount = 0;
                 Log.d(TAG, "Rewarded ad loaded");
             }
             @Override
             public void onAdLoadFailed(InMobiInterstitial ad, InMobiAdRequestStatus status) {
                 rewardedAdReady = false;
                 Log.w(TAG, "Rewarded ad failed: " + status.getMessage());
+                scheduleRewardedRetry();
             }
             @Override
             public void onAdFetchSuccessful(InMobiInterstitial ad, AdMetaInfo info) { }
@@ -175,12 +188,12 @@ public class MainActivity extends Activity {
             @Override
             public void onAdDisplayFailed(InMobiInterstitial ad) {
                 rewardedAdReady = false;
-                ad.load();
+                scheduleRewardedRetry();
             }
             @Override
             public void onAdDismissed(InMobiInterstitial ad) {
                 rewardedAdReady = false;
-                ad.load();
+                adHandler.postDelayed(() -> { if (!isFinishing() && !isDestroyed()) ad.load(); }, 1500);
             }
             @Override
             public void onUserLeftApplication(InMobiInterstitial ad) { }
@@ -197,6 +210,38 @@ public class MainActivity extends Activity {
             public void onAdImpression(InMobiInterstitial ad) { }
         });
         rewardedAd.load();
+    }
+
+
+    // Retry transient no-fill/network failures with capped exponential backoff.
+    // Ads never block gameplay and an unavailable ad never grants a reward.
+    private long retryDelayMs(int attempt) {
+        return Math.min(60000L, 5000L * (1L << Math.min(attempt, 3)));
+    }
+
+    private void scheduleBannerRetry() {
+        if (bannerRetryCount >= MAX_AD_RETRIES || isFinishing() || isDestroyed()) return;
+        long delay = retryDelayMs(bannerRetryCount++);
+        adHandler.postDelayed(() -> {
+            if (bannerAd != null && !isFinishing() && !isDestroyed()) bannerAd.load();
+        }, delay);
+    }
+
+    private void scheduleInterstitialRetry() {
+        if (interstitialRetryCount >= MAX_AD_RETRIES || isFinishing() || isDestroyed()) return;
+        long delay = retryDelayMs(interstitialRetryCount++);
+        adHandler.postDelayed(() -> {
+            if (interstitialAd != null && !isFinishing() && !isDestroyed()) interstitialAd.load();
+        }, delay);
+    }
+
+    private void scheduleRewardedRetry() {
+        rewardedAdReady = false;
+        if (rewardedRetryCount >= MAX_AD_RETRIES || isFinishing() || isDestroyed()) return;
+        long delay = retryDelayMs(rewardedRetryCount++);
+        adHandler.postDelayed(() -> {
+            if (rewardedAd != null && !isFinishing() && !isDestroyed()) rewardedAd.load();
+        }, delay);
     }
 
     private class AdsBridge {
@@ -226,6 +271,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        adHandler.removeCallbacksAndMessages(null);
         if (bannerAd != null) {
             bannerAd.destroy();
             bannerAd = null;
