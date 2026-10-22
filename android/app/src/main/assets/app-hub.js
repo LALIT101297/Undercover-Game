@@ -318,7 +318,169 @@
   document.getElementById("pg-quiz-card").addEventListener("click",()=>{openMiniGame("pg-quiz-game");quizStart();});
   document.getElementById("pg-rps-back").addEventListener("click",()=>closeMiniGame("pg-rps-game"));
   document.getElementById("pg-quiz-back").addEventListener("click",()=>closeMiniGame("pg-quiz-game"));
-  let mode = "login";
+
+  // Offline party games: local-only engines and bundled prompt/question packs.
+  const offlineSection=document.createElement("div");
+  offlineSection.id="pg-offline-extra";
+  offlineSection.className="mt-3 space-y-3";
+  offlineSection.innerHTML=`
+    <section id="pg-simple-game" class="hidden panel">
+      <div class="flex justify-between"><button id="pg-simple-back" class="text-sm text-violet-200 font-bold">← Games</button><span class="pill">OFFLINE · LOCAL</span></div>
+      <h2 id="pg-simple-title" class="text-2xl font-black text-center mt-4"></h2>
+      <p id="pg-simple-instructions" class="text-xs text-slate-400 text-center mt-2"></p>
+      <div id="pg-simple-setup" class="mt-4 space-y-3"></div>
+      <div id="pg-simple-play" class="mt-4 space-y-3"></div>
+    </section>
+    <section id="pg-snl-game" class="hidden panel">
+      <div class="flex justify-between"><button class="pg-extra-back text-sm text-violet-200 font-bold">← Games</button><span class="pill">OFFLINE · 2–4 PLAYERS</span></div>
+      <h2 class="text-2xl font-black text-center mt-3">🐍 Snakes & Ladders</h2>
+      <div id="pg-snl-board" class="grid grid-cols-10 gap-1 mt-4"></div>
+      <p id="pg-snl-status" class="text-center font-bold mt-4">Set up players</p>
+      <div id="pg-snl-controls" class="mt-3 space-y-2"></div>
+    </section>
+    <section id="pg-ludo-game" class="hidden panel">
+      <div class="flex justify-between"><button class="pg-extra-back text-sm text-violet-200 font-bold">← Games</button><span class="pill">OFFLINE · 2–4 PLAYERS</span></div>
+      <h2 class="text-2xl font-black text-center mt-3">🎲 Ludo</h2>
+      <p class="text-xs text-slate-400 text-center">Local Pass & Play · Six to enter · Exact roll to finish</p>
+      <div id="pg-ludo-players" class="grid grid-cols-2 gap-2 mt-4"></div>
+      <p id="pg-ludo-status" class="text-center font-bold mt-4">Set up players</p>
+      <div id="pg-ludo-controls" class="mt-3 space-y-2"></div>
+      <div id="pg-ludo-track" class="grid grid-cols-7 gap-1 mt-4"></div>
+    </section>`;
+  root.appendChild(offlineSection);
+  const extraCards=[
+    ["pg-stop-card","🔤","Name Place Animal Thing","Pass & Play · timed rounds","stop"],
+    ["pg-20q-card","❓","20 Questions","Guess the secret object","twenty"],
+    ["pg-who-card","🪪","Who Am I?","Clues · Pass & Play","who"],
+    ["pg-charades-card","🎭","Dumb Charades","Movie prompts · teams","charades"],
+    ["pg-dialogue-card","🎬","Bollywood Dialogue Challenge","Guess the film or actor","dialogue"],
+    ["pg-music-card","🎵","Bollywood Music Quiz","Song trivia · no audio","music"],
+    ["pg-snl-card","🐍","Snakes & Ladders","2–4 players · bots optional","snl"],
+    ["pg-ludo-card","🎲","Ludo","2–4 players · local play","ludo"]
+  ];
+  const gameGrid=root.querySelector("#pg-home .grid.grid-cols-2");
+  if(gameGrid){
+    gameGrid.innerHTML="";
+    extraCards.forEach(([id,emoji,name,desc])=>{
+      const b=document.createElement("button");b.id=id;b.type="button";b.className="tile text-left border-cyan-300/30";
+      b.innerHTML='<div class="flex justify-between"><span class="text-3xl">'+emoji+'</span><span class="pill">Playable · Offline</span></div><div><h3 class="font-extrabold">'+name+'</h3><p class="text-[11px] text-slate-400">'+desc+'</p></div>';
+      gameGrid.appendChild(b);
+    });
+    const existing=["pg-tictactoe","pg-rps-card","pg-quiz-card"];
+    existing.forEach(id=>{const el=document.getElementById(id);if(el)gameGrid.appendChild(el);});
+  }
+  const extraBack=()=>{["pg-simple-game","pg-snl-game","pg-ludo-game"].forEach(id=>document.getElementById(id).classList.add("hidden"));homeView.classList.remove("hidden");window.scrollTo(0,0);};
+  document.getElementById("pg-simple-back").addEventListener("click",extraBack);
+  document.querySelectorAll(".pg-extra-back").forEach(b=>b.addEventListener("click",extraBack));
+  function showSimple(title,description,setupHTML){
+    ["pg-ttt","pg-rps-game","pg-quiz-game","pg-snl-game","pg-ludo-game"].forEach(id=>{const e=document.getElementById(id);if(e)e.classList.add("hidden");});
+    homeView.classList.add("hidden");const sec=document.getElementById("pg-simple-game");sec.classList.remove("hidden");
+    document.getElementById("pg-simple-title").textContent=title;document.getElementById("pg-simple-instructions").textContent=description;
+    document.getElementById("pg-simple-setup").innerHTML=setupHTML;document.getElementById("pg-simple-play").innerHTML="";window.scrollTo(0,0);
+  }
+  const $id=id=>document.getElementById(id);
+  const stopLetters="ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+  function launchStop(){
+    showSimple("🔤 Name Place Animal Thing","Everyone writes answers for the same letter. Score 10 unique, 5 repeated, 0 blank.",'<label class="block text-sm">Players (2–8)<input id="stop-count" class="field" type="number" min="2" max="8" value="3"></label><button id="stop-start" class="primary w-full rounded-xl py-3 font-bold">Start round</button>');
+    $id("stop-start").onclick=()=>{
+      const n=Math.max(2,Math.min(8,Number($id("stop-count").value)||3)),letter=stopLetters[Math.floor(Math.random()*26)];
+      const cats=["Name","Place","Animal","Thing"];
+      $id("pg-simple-play").innerHTML='<p class="text-center text-3xl font-black">'+letter+'</p><p class="text-xs text-slate-400 text-center">Pass the device between players. Enter answers for '+letter+'.</p>'+Array.from({length:n},(_,p)=>'<div class="panel"><h3 class="font-bold">Player '+(p+1)+'</h3>'+cats.map(c=>'<label class="block text-xs mt-2">'+c+'<input class="field stop-answer" data-player="'+p+'" data-cat="'+c+'" placeholder="'+c+' starting with '+letter+'"></label>').join("")+'</div>').join("")+'<button id="stop-score" class="primary w-full rounded-xl py-3 font-bold">Reveal scores</button><div id="stop-results" class="mt-3"></div>';
+      $id("stop-score").onclick=()=>{
+        const vals=[...document.querySelectorAll(".stop-answer")],answers=vals.map(x=>x.value.trim().toLowerCase()),scores=Array(n).fill(0);
+        vals.forEach((x,i)=>{const v=answers[i];if(!v||v[0]!==letter.toLowerCase())return;const same=answers.filter(a=>a===v).length;scores[Number(x.dataset.player)]+=same===1?10:5;});
+        $id("stop-results").innerHTML=scores.map((v,i)=>'<p class="flex justify-between border-b border-white/10 py-2">Player '+(i+1)+' <b>'+v+' points</b></p>').join("")+'<button id="stop-again" class="primary w-full rounded-xl py-3 mt-3">Next round</button>';
+        $id("stop-again").onclick=launchStop;
+      };
+    };
+  }
+  const twentyPrompts=["elephant","bicycle","taj mahal","mango","cricket","umbrella","telephone","mountain","train","pizza","tiger","camera","rainbow","clock","guitar","rocket","penguin","waterfall","library","football"];
+  function launchTwenty(){
+    showSimple("❓ 20 Questions","Think of an object, animal or place. Ask up to 20 yes/no questions; then make a guess.",'<p class="text-sm">Choose a secret word for the bot to guess, or let the bot choose and you ask questions.</p><div class="grid grid-cols-2 gap-2"><button id="twenty-human" class="primary rounded-xl py-3">I guess</button><button id="twenty-bot" class="bg-slate-700 rounded-xl py-3">Bot guesses</button></div>');
+    $id("twenty-human").onclick=()=>{
+      let word=twentyPrompts[Math.floor(Math.random()*twentyPrompts.length)],count=0;
+      $id("pg-simple-play").innerHTML='<p class="font-bold">Ask a yes/no question</p><input id="twenty-q" class="field" placeholder="Is it alive?"><div class="grid grid-cols-2 gap-2"><button id="twenty-yes" class="primary rounded-xl py-3">Yes</button><button id="twenty-no" class="bg-slate-700 rounded-xl py-3">No</button></div><p id="twenty-count" class="text-center text-sm">0 / 20 questions</p><input id="twenty-guess" class="field" placeholder="Your final guess"><button id="twenty-submit" class="primary w-full rounded-xl py-3">Submit guess</button><p id="twenty-feedback" class="text-center"></p>';
+      ["yes","no"].forEach(ans=>$id("twenty-"+ans).onclick=()=>{if(count>=20)return;count++;$id("twenty-count").textContent=count+" / 20 questions used. (Answer key is local; think of a clue yourself.)";});
+      $id("twenty-submit").onclick=()=>{$id("twenty-feedback").textContent=$id("twenty-guess").value.trim().toLowerCase()===word?"Correct! 🎉":"The secret word was: "+word;};
+    };
+    $id("twenty-bot").onclick=()=>{
+      const word=prompt("Enter a secret word for the bot to guess (keep it hidden):");if(!word)return;
+      const guesses=["animal","food","place","vehicle","object","sport","fruit","technology"];
+      let i=0;
+      $id("pg-simple-play").innerHTML='<p class="font-bold">Bot question '+(i+1)+': Is it a/an '+guesses[i]+'?</p><div class="grid grid-cols-2 gap-2"><button id="twenty-bot-yes" class="primary rounded-xl py-3">Yes</button><button id="twenty-bot-no" class="bg-slate-700 rounded-xl py-3">No</button></div><p id="twenty-bot-result" class="text-center mt-3"></p>';
+      const ask=()=>{$id("pg-simple-play").querySelector("p").textContent="Bot question "+(i+1)+": Is it a/an "+guesses[i%guesses.length]+"?";};
+      ["yes","no"].forEach(a=>$id("twenty-bot-"+a).onclick=()=>{i++;if(i>=20){$id("twenty-bot-result").textContent="Bot's guess: "+word+" 🤖";}else ask();});
+    };
+  }
+  const identityDeck=["Mahatma Gandhi","Albert Einstein","Virat Kohli","A famous chef","A movie director","A doctor","A school teacher","A cricket umpire","A pilot","A singer","A scientist","A freedom fighter","A detective","A photographer","A footballer","A painter"];
+  function launchWho(){
+    showSimple("🪪 Who Am I?","Pass the device. One player sees their identity, then gives the device to the group for yes/no questions.",'<label class="block text-sm">Players (2–8)<input id="who-count" class="field" type="number" min="2" max="8" value="4"></label><button id="who-start" class="primary w-full rounded-xl py-3">Start</button>');
+    $id("who-start").onclick=()=>{const n=Math.max(2,Math.min(8,Number($id("who-count").value)||4)),deck=identityDeck.slice().sort(()=>Math.random()-.5).slice(0,n);let p=0;
+      const render=()=>{$id("pg-simple-play").innerHTML='<div class="panel text-center"><p>Player '+(p+1)+' — look privately</p><button id="who-reveal" class="primary rounded-xl px-5 py-3 mt-3">Reveal my identity</button><p id="who-word" class="text-2xl font-black mt-4"></p></div><button id="who-next" class="bg-slate-700 w-full rounded-xl py-3 mt-3">'+(p===n-1?"Finish setup":"Next player")+'</button>';
+        $id("who-reveal").onclick=()=>{$id("who-word").textContent=deck[p];$id("who-reveal").disabled=true;};
+        $id("who-next").onclick=()=>{p++;if(p<n)render();else $id("pg-simple-play").innerHTML='<p class="text-center font-bold">Everyone has received an identity. Start asking yes/no questions!</p><button class="primary w-full rounded-xl py-3" onclick="document.getElementById(\'pg-simple-back\').click()">Back to games</button>';};
+      };render();
+    };
+  }
+  const moviePrompts=["3 Idiots","Sholay","Dangal","Lagaan","Dilwale Dulhania Le Jayenge","Chak De! India","Munna Bhai M.B.B.S.","Queen","Zindagi Na Milegi Dobara","Bajrangi Bhaijaan","PK","Hera Pheri","Taare Zameen Par","Jab We Met","Andaz Apna Apna","Koi... Mil Gaya"];
+  const dialoguePrompts=[
+    ["Mere paas maa hai","Deewaar"],["Kitne aadmi the?","Sholay"],["All is well","3 Idiots"],["Bade bade deshon mein","Dilwale Dulhania Le Jayenge"],["Mogambo khush hua","Mr. India"],["Don ko pakadna mushkil hi nahi","Don"],["Picture abhi baaki hai","Om Shanti Om"],["How's the josh?","Uri: The Surgical Strike"],["Utha le re baba","Hera Pheri"],["Tension lene ka nahi, dene ka","Munnabhai M.B.B.S."]
+  ];
+  const musicPrompts=[["Who sang the title track of Aashiqui 2?","Arijit Singh"],["Which film features the song 'Chaiyya Chaiyya'?","Dil Se"],["Who composed the music for 'Kal Ho Naa Ho'?","Shankar–Ehsaan–Loy"],["Which film features 'Kesariya'?","Brahmastra"],["Who sang 'Tum Hi Ho'?","Arijit Singh"],["Which film features 'Jai Ho'?","Slumdog Millionaire"],["Who composed music for DDLJ?","Jatin–Lalit"],["Which singer is known for 'Why This Kolaveri Di'?","Dhanush"],["Which film features 'Gallan Goodiyaan'?","Dil Dhadakne Do"],["Who sang 'Tujh Mein Rab Dikhta Hai'?","Roop Kumar Rathod"]];
+  function launchPromptQuiz(kind){
+    const isDialogue=kind==="dialogue",bank=isDialogue?dialoguePrompts:musicPrompts;
+    showSimple(isDialogue?"🎬 Bollywood Dialogue Challenge":"🎵 Bollywood Music Quiz",isDialogue?"Guess the movie from a famous dialogue (text clue only).":"Bollywood music trivia. No copyrighted audio is bundled.",'<label class="block text-sm">Rounds (5–10)<input id="prompt-rounds" class="field" type="number" min="5" max="10" value="5"></label><button id="prompt-start" class="primary w-full rounded-xl py-3">Start quiz</button>');
+    $id("prompt-start").onclick=()=>{const n=Math.max(5,Math.min(10,Number($id("prompt-rounds").value)||5)),set=bank.slice().sort(()=>Math.random()-.5).slice(0,n);let at=0,score=0;
+      const render=()=>{if(at>=set.length){$id("pg-simple-play").innerHTML='<p class="text-center text-2xl font-black">Score: '+score+'/'+n+'</p><button id="prompt-again" class="primary w-full rounded-xl py-3">Play again</button>';$id("prompt-again").onclick=()=>launchPromptQuiz(kind);return;}
+        const item=set[at];$id("pg-simple-play").innerHTML='<p class="text-xs text-slate-400">Question '+(at+1)+' / '+n+'</p><p class="text-lg font-bold mt-3">'+(isDialogue?"“"+item[0]+"”":"🎼 "+item[0])+'</p><input id="prompt-answer" class="field" placeholder="'+(isDialogue?"Movie name":"Answer")+'"><button id="prompt-check" class="primary w-full rounded-xl py-3 mt-3">Check answer</button><p id="prompt-feedback" class="text-center mt-3"></p>';
+        $id("prompt-check").onclick=()=>{const ok=$id("prompt-answer").value.trim().toLowerCase()===item[1].toLowerCase();if(ok)score++;$id("prompt-feedback").textContent=(ok?"Correct! ":"Answer: ")+item[1];$id("prompt-check").textContent="Next";$id("prompt-check").onclick=()=>{at++;render();};};
+      };render();
+    };
+  }
+  document.getElementById("pg-stop-card").onclick=launchStop;
+  document.getElementById("pg-20q-card").onclick=launchTwenty;
+  document.getElementById("pg-who-card").onclick=launchWho;
+  document.getElementById("pg-charades-card").onclick=()=>{
+    showSimple("🎭 Dumb Charades","Act without speaking. Pass the device to the actor to privately reveal the movie prompt.",'<label class="block text-sm">Team / player count<input id="charades-count" class="field" type="number" min="2" max="8" value="4"></label><button id="charades-start" class="primary w-full rounded-xl py-3">Get a prompt</button>');
+    $id("charades-start").onclick=()=>{const p=moviePrompts[Math.floor(Math.random()*moviePrompts.length)];$id("pg-simple-play").innerHTML='<div class="panel text-center"><p class="text-sm">Actor only — show privately</p><p id="charades-word" class="text-2xl font-black blur-md mt-3">'+p+'</p><button id="charades-reveal" class="primary rounded-xl px-5 py-3 mt-4">Reveal prompt</button></div><button id="charades-next" class="bg-slate-700 w-full rounded-xl py-3 mt-3">Next prompt</button>';$id("charades-reveal").onclick=()=>$id("charades-word").classList.remove("blur-md");$id("charades-next").onclick=()=>{$id("charades-start").click();};};
+  };
+  document.getElementById("pg-dialogue-card").onclick=()=>launchPromptQuiz("dialogue");
+  document.getElementById("pg-music-card").onclick=()=>launchPromptQuiz("music");
+
+  // Snakes & Ladders: local hot-seat players and optional bot seats.
+  const snlJumps={4:14,9:31,17:7,20:38,28:84,40:59,51:67,54:34,62:19,63:81,64:60,71:91,87:24,93:73,95:75,99:78};
+  let snlPlayers=[],snlTurn=0,snlDone=false;
+  function snlDraw(){
+    const board=$id("pg-snl-board");board.innerHTML="";
+    for(let row=9;row>=0;row--){const nums=Array.from({length:10},(_,i)=>row%2===0?row*10+i+1:row*10+10-i);nums.forEach(n=>{const cell=document.createElement("div");cell.className="aspect-square rounded-md bg-slate-800 border border-white/10 flex flex-col items-center justify-center text-[9px]";cell.innerHTML='<span>'+n+'</span><b class="text-[10px]">'+snlPlayers.filter(p=>p.pos===n).map(p=>p.name[0]).join("")+'</b>';if(snlJumps[n])cell.classList.add(snlJumps[n]>n?"bg-emerald-900":"bg-rose-950");board.appendChild(cell);});}
+    const controls=$id("pg-snl-controls");controls.innerHTML=snlPlayers.map((p,i)=>'<p class="text-xs py-1">'+p.name+': '+p.pos+'/100 '+(p.bot?"🤖":"👤")+'</p>').join("");
+    if(!snlDone){const p=snlPlayers[snlTurn];$id("pg-snl-status").textContent=p.name+"'s turn";const b=document.createElement("button");b.className="primary w-full rounded-xl py-3 font-bold";b.textContent="🎲 Roll dice";b.onclick=snlRoll;controls.appendChild(b);}
+  }
+  function snlRoll(){if(snlDone)return;const p=snlPlayers[snlTurn],d=1+Math.floor(Math.random()*6);let msg=p.name+" rolled "+d+". ";if(p.pos+d<=100){p.pos+=d;if(snlJumps[p.pos]){msg+=snlJumps[p.pos]>p.pos?"Ladder! ":"Snake! ";p.pos=snlJumps[p.pos];}}else msg+="Need exact roll to reach 100. ";if(p.pos===100){snlDone=true;msg+=p.name+" wins! 🏆";}$id("pg-snl-status").textContent=msg;if(!snlDone)snlTurn=(snlTurn+1)%snlPlayers.length;snlDraw();}
+  function launchSnl(){homeView.classList.add("hidden");$id("pg-snl-game").classList.remove("hidden");snlPlayers=[{name:"Player 1",pos:0,bot:false},{name:"Player 2",pos:0,bot:true}];snlTurn=0;snlDone=false;snlDraw();}
+  document.getElementById("pg-snl-card").onclick=launchSnl;
+
+  // Ludo local board: four tokens per seat, classic 52-step loop plus home lane.
+  const ludoColors=["#ef4444","#22c55e","#eab308","#3b82f6"];
+  let ludoPlayers=[],ludoTurn=0,ludoDice=0,ludoFinished=false;
+  function ludoRender(){
+    $id("pg-ludo-players").innerHTML=ludoPlayers.map((p,i)=>'<div class="rounded-xl p-2 text-center text-xs" style="background:'+ludoColors[i]+'22;border:1px solid '+ludoColors[i]+'66">'+p.name+'<br><b>'+p.tokens.map(t=>t<0?"🏠":t>=56?"🏁":t+1).join(" · ")+'</b></div>').join("");
+    const track=$id("pg-ludo-track");track.innerHTML="";for(let i=0;i<52;i++){const c=document.createElement("div");c.className="aspect-square rounded bg-slate-800 border border-white/10 text-[9px] flex items-center justify-center";const occupants=[];ludoPlayers.forEach((p,pi)=>p.tokens.forEach((t,ti)=>{if(t>=0&&t<52&&((t+pi*13)%52)===i)occupants.push(String(pi+1));}));c.textContent=occupants.join("")||((i%13===0)?"★":"");track.appendChild(c);}
+    $id("pg-ludo-status").textContent=ludoFinished?"Game finished":ludoPlayers[ludoTurn].name+"'s turn"+(ludoDice?" · Dice "+ludoDice:"");
+    const controls=$id("pg-ludo-controls");controls.innerHTML="";
+    if(ludoFinished)return;
+    const roll=document.createElement("button");roll.className="primary w-full rounded-xl py-3 font-bold";roll.textContent=ludoDice?"Dice: "+ludoDice:"🎲 Roll dice";roll.disabled=!!ludoDice;roll.onclick=()=>{ludoDice=1+Math.floor(Math.random()*6);ludoRender();};controls.appendChild(roll);
+    ludoPlayers[ludoTurn].tokens.forEach((t,i)=>{const b=document.createElement("button");b.className="w-full rounded-xl py-2 bg-slate-800 text-sm";b.textContent="Move token "+(i+1)+(t<0?" (yard)": " (position "+(t+1)+")");b.disabled=!ludoDice||!(t<0?ludoDice===6:t+ludoDice<=56);b.onclick=()=>ludoMove(i);controls.appendChild(b);});
+    const hint=document.createElement("p");hint.className="text-[10px] text-slate-400 text-center";hint.textContent="A six brings a token out. Reach 56 exactly to finish. Safe stars cannot be captured.";controls.appendChild(hint);
+  }
+  function ludoMove(index){const p=ludoPlayers[ludoTurn],old=p.tokens[index];if(old<0)p.tokens[index]=0;else p.tokens[index]+=ludoDice;const global=(p.tokens[index]+ludoTurn*13)%52;
+    if(p.tokens[index]<52&&![0,8,13,21,26,34,39,47].includes(global)){ludoPlayers.forEach((other,pi)=>{if(pi!==ludoTurn)other.tokens=other.tokens.map(t=>t>=0&&t<52&&((t+pi*13)%52)===global?-1:t);});}
+    ludoDice=0;if(p.tokens.every(t=>t===56)){ludoFinished=true;$id("pg-ludo-status").textContent=p.name+" wins! 🏆";}else if(arguments.length)ludoTurn=(ludoTurn+1)%ludoPlayers.length;ludoRender();
+  }
+  function launchLudo(){homeView.classList.add("hidden");$id("pg-ludo-game").classList.remove("hidden");ludoPlayers=[{name:"Red",tokens:[-1,-1,-1,-1]},{name:"Green",tokens:[-1,-1,-1,-1]}];ludoTurn=0;ludoDice=0;ludoFinished=false;ludoRender();}
+  document.getElementById("pg-ludo-card").onclick=launchLudo;
+
+    let mode = "login";
   let session = null;
   const authView = document.getElementById("pg-auth");
   const homeView = document.getElementById("pg-home");
