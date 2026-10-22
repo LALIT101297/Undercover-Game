@@ -29,10 +29,40 @@ Each game is an isolated module and owns its rules, setup, round state, renderin
 - getResult(state)
 Online actions must be validated server-side for competitive or hidden-information games. A client must not receive another player's private role or secret information before the game rules allow it.
 
-### 4. Initial game catalogue
-- Social deduction: Undercover Imposter, Mafia/Werewolf, Spyfall, Hidden Traitor.
-- Party and guessing: Two Truths & A Lie, Dumb Charades, Truth or Dare, Quiz Battle.
-- Casual competition: Rock Paper Scissors, Word Challenge, Tic Tac Toe, Number Challenge.
+### 4. Approved game catalogue and roadmap
+
+#### First release — approved games
+1. Undercover Imposter (existing; preserve current implementation).
+2. Mafia / Werewolf.
+3. Spyfall.
+4. Dumb Charades.
+5. Quiz Battle.
+6. Rock Paper Scissors.
+7. Tic Tac Toe.
+8. Pictionary (Skribbl-style: one player draws while others guess in real time).
+9. Bollywood Music Quiz (Indian music focus; Bollywood is the priority).
+10. Bollywood Dialogue Challenge (guess the film or actor from a famous dialogue).
+11. 20 Questions (yes/no questions to identify a hidden person, place, or thing).
+12. Name Place Animal Thing / Stop (shared letter, timed category answers, scoring).
+13. Who Am I? (players ask questions to identify the character/name assigned to them).
+
+#### Future candidates — not part of the first-release commitment
+- Word Chain / Word Bomb.
+- Antakshari.
+- Memory Match.
+- Ludo.
+- Connect 4.
+- Number Challenge.
+
+#### Explicitly not selected
+- Two Truths & A Lie.
+- Truth or Dare.
+- Emoji Quiz.
+- Would You Rather.
+- Never Have I Ever.
+
+#### Music content and rights
+The Bollywood Music Quiz should prioritize recognizable Hindi film music and North-Indian audience relevance. Do not bundle or stream copyrighted song recordings without the required rights. Prefer licensed music sources or a rights-cleared content pack; until then, build the quiz around legally usable text clues, trivia, and metadata.
 
 ## Data model direction
 Reuse the existing Undercover tables and Edge Function until their responsibilities are deliberately generalized. Add shared tables in a separately reviewed migration:
@@ -49,7 +79,7 @@ Use UUID primary keys, foreign keys to auth.users, timestamps, constrained statu
 ## Delivery phases
 1. Foundation (current): colorful hub, email sign-in/sign-up, guest entry, shared navigation, app label, and existing Undercover integration.
 2. Shared platform: durable profile editing, friends, generalized rooms, presence, reconnect handling, and shared leaderboard/stat contracts.
-3. Game modules: Mafia/Werewolf and Spyfall first, then party/guessing games, then casual competitive games.
+3. Game modules: preserve and regression-test Undercover first; then Mafia/Werewolf and Spyfall; then Pictionary and other party/guessing modules; then Bollywood Music Quiz, Bollywood Dialogue Challenge, 20 Questions, Stop, and Who Am I?; then casual competitive games. Ship each module only after its online/offline modes and multi-device behavior are tested.
 4. Progression: achievements, levels, match history, game-specific leaderboards, and moderation/reporting.
 5. Hardening: offline/online regression, multi-device testing, reconnect and race-condition tests, privacy/RLS review, and release builds.
 
