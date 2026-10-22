@@ -49,8 +49,9 @@ Online actions must be validated server-side for competitive or hidden-informati
 #### Future candidates — not part of the first-release commitment
 - Word Chain / Word Bomb.
 - Antakshari.
-- Memory Match.
+- Memory Match (card-flipping memory game).
 - Ludo.
+- Snakes & Ladders.
 - Connect 4.
 - Number Challenge.
 
