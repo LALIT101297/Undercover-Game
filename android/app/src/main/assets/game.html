@@ -47,6 +47,7 @@
         <span>Round <strong id="rounds-count-text" class="text-indigo-400 font-bold">0</strong></span>
       </div>
       <div class="flex items-center gap-1.5">
+        <button id="btn-open-stats" type="button" class="py-1.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition">Stats</button>
         <button id="btn-open-audio-modal" type="button" class="py-1.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition flex items-center gap-1.5 shadow-sm">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
@@ -99,6 +100,24 @@
         </div>
       </div>
     </div>
+
+    <!-- Local player stats and saved progress -->
+    <section id="stats-panel" class="hidden mb-4 bg-slate-800/95 border border-indigo-500/30 rounded-2xl p-4 shadow-xl">
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <p class="text-[10px] uppercase tracking-widest text-indigo-300 font-bold">Player Hub</p>
+          <h2 class="text-lg font-extrabold text-white">Your Game Stats</h2>
+        </div>
+        <button id="btn-close-stats" type="button" class="px-3 py-1.5 rounded-lg bg-slate-700 text-xs font-bold text-slate-200">Close</button>
+      </div>
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        <div class="rounded-xl bg-slate-900 border border-slate-700 p-3"><p class="text-[10px] text-slate-400 uppercase font-bold">Rounds played</p><p id="stats-rounds" class="text-2xl font-extrabold text-white">0</p></div>
+        <div class="rounded-xl bg-slate-900 border border-slate-700 p-3"><p class="text-[10px] text-slate-400 uppercase font-bold">Top player</p><p id="stats-top-player" class="text-lg font-extrabold text-amber-300 truncate">—</p><p id="stats-top-wins" class="text-[10px] text-slate-400">0 wins</p></div>
+      </div>
+      <p class="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-2">Leaderboard</p>
+      <div id="stats-leaderboard" class="space-y-1.5"></div>
+      <p class="text-[10px] text-slate-500 mt-3">Progress is saved on this device. Online profiles and cross-device sync will be added with the game backend.</p>
+    </section>
 
     <!-- Custom Spy App Icon Header -->
     <header class="text-center mb-4">
@@ -499,7 +518,7 @@
   </div>
 
   <footer class="text-center text-xs text-slate-500 py-3 mt-4">
-    Undercover Imposter - v2.7 (Premium UI + Ad Retry + Online Privacy)
+    Undercover Imposter - v2.8 (Player Hub + Saved Progress)
   </footer>
 
   <script>
@@ -1319,6 +1338,64 @@
       { majority: "Cricket", imposter: "Baseball" }
     ];
 
+    const GAME_SAVE_KEY = "undercover_imposter_save_v1";
+    function saveGameData() {
+      try {
+        localStorage.setItem(GAME_SAVE_KEY, JSON.stringify({
+          players: players.map(p => ({ name: String(p.name || "").slice(0, 20), wins: Math.max(0, Number(p.wins) || 0) })),
+          totalRoundsPlayed: Math.max(0, Number(totalRoundsPlayed) || 0),
+          customPairs: customPairs.slice(0, 100)
+        }));
+      } catch (e) { console.warn("Could not save local game data", e); }
+    }
+    function loadGameData() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(GAME_SAVE_KEY) || "null");
+        if (!saved || typeof saved !== "object") return;
+        if (Array.isArray(saved.players) && saved.players.length >= 3 && saved.players.length <= 8) {
+          players = saved.players.map((p, i) => ({
+            name: String(p.name || `Player ${i + 1}`).replace(/[<>]/g, "").slice(0, 20) || `Player ${i + 1}`,
+            wins: Math.max(0, Number(p.wins) || 0)
+          }));
+        }
+        if (Array.isArray(saved.customPairs)) {
+          customPairs = saved.customPairs.filter(p => p && typeof p.majority === "string" && typeof p.imposter === "string")
+            .slice(0, 100).map(p => ({ majority: p.majority.slice(0, 40), imposter: p.imposter.slice(0, 40) }));
+        }
+        totalRoundsPlayed = Math.max(0, Number(saved.totalRoundsPlayed) || 0);
+      } catch (e) { console.warn("Could not load local game data", e); }
+    }
+    loadGameData();
+
+    function renderStatsPanel() {
+      const sorted = [...players].sort((a, b) => b.wins - a.wins);
+      const leader = sorted[0];
+      document.getElementById("stats-rounds").textContent = totalRoundsPlayed;
+      document.getElementById("stats-top-player").textContent = leader && leader.wins > 0 ? leader.name : "—";
+      document.getElementById("stats-top-wins").textContent = `${leader ? leader.wins : 0} wins`;
+      const list = document.getElementById("stats-leaderboard");
+      list.innerHTML = "";
+      sorted.forEach((player, index) => {
+        const row = document.createElement("div");
+        row.className = "flex items-center justify-between rounded-lg bg-slate-900/80 border border-slate-700/70 px-3 py-2";
+        const left = document.createElement("span");
+        left.className = "text-xs font-semibold text-slate-200";
+        left.textContent = `${index + 1}. ${player.name}`;
+        const right = document.createElement("span");
+        right.className = "text-xs font-bold text-amber-300";
+        right.textContent = `${player.wins} wins`;
+        row.append(left, right);
+        list.appendChild(row);
+      });
+    }
+    document.getElementById("btn-open-stats").addEventListener("click", () => {
+      renderStatsPanel();
+      document.getElementById("stats-panel").classList.remove("hidden");
+    });
+    document.getElementById("btn-close-stats").addEventListener("click", () => {
+      document.getElementById("stats-panel").classList.add("hidden");
+    });
+
     let timerDuration = 60;
     let timerRemaining = 60;
     let isTimerPaused = false;
@@ -1436,6 +1513,7 @@
         input.addEventListener("input", (e) => {
           player.name = e.target.value.trim() || `Player ${index + 1}`;
           renderScoreboards();
+          saveGameData();
         });
         row.appendChild(input);
 
@@ -1461,6 +1539,7 @@
 
     function renderScoreboards() {
       document.getElementById("rounds-count-text").textContent = totalRoundsPlayed;
+      saveGameData();
       const list = document.getElementById("setup-scoreboard-list");
       list.innerHTML = "";
       players.forEach((p, idx) => {
@@ -1477,6 +1556,7 @@
         Sound.click();
         players.push({ name: `Player ${players.length + 1}`, wins: 0 });
         renderPlayerInputs();
+        saveGameData();
       } else {
         showToast("Maximum 8 players allowed!");
       }
@@ -1487,6 +1567,7 @@
       totalRoundsPlayed = 0;
       players.forEach(p => p.wins = 0);
       renderScoreboards();
+      saveGameData();
     });
 
     function renderCustomPairsList() {
@@ -1671,6 +1752,7 @@
         return;
       }
       totalRoundsPlayed++;
+      saveGameData();
       if (window.AndroidAds) window.AndroidAds.onRoundCompleted(totalRoundsPlayed);
       const allCaught = imposterIndices.every(idx => selectedVoteIndices.includes(idx));
       lastRewardWinnerIndices = allCaught
@@ -1759,6 +1841,7 @@
 
     renderPlayerInputs();
     renderCustomPairsList();
+    renderScoreboards();
   </script>
 </body>
 </html>
