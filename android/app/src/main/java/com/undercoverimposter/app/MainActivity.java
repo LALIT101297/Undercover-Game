@@ -52,7 +52,7 @@ public class MainActivity extends Activity {
 
         InMobiSdk.init(this, INMOBI_ACCOUNT_ID, null, new SdkInitializationListener() {
             @Override
-            public void onInitializationComplete(com.inmobi.sdk.InMobiSdk.Error error) {
+            public void onInitializationComplete(Error error) {
                 if (error != null) {
                     Log.e(TAG, "InMobi initialization failed: " + error.getMessage());
                     return;
