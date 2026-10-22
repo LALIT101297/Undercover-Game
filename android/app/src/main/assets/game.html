@@ -1188,7 +1188,7 @@
         list.appendChild(row);
       });
 
-      document.getElementById("play-again-text").textContent = isOnlineHost ? "Back to Online Lobby" : "Return to Lobby";
+      document.getElementById("play-again-text").textContent = isOnlineHost ? "Start Next Round" : "Waiting for Host";
     }
 
     // =====================================================
@@ -1707,7 +1707,7 @@
         if (isOnlineHost) {
           try { applyOnlineResponse(await onlineAction("again")); startOnlinePolling(); }
           catch (e) { showToast(e.message); }
-        } else { showScreen(screenOnlineLobby); }
+        } else { showToast("Waiting for the host to start the next round."); }
       } else { renderScoreboards(); showScreen(screenSetup); }
     });
 
