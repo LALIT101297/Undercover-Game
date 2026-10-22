@@ -16,6 +16,12 @@
     ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); border-radius: 8px; }
     ::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.5); border-radius: 8px; }
     ::-webkit-scrollbar-thumb:hover { background: rgba(99, 102, 241, 0.8); }
+    body { background: radial-gradient(ellipse at 12% 0%, rgba(79,70,229,.22), transparent 38%), radial-gradient(ellipse at 92% 18%, rgba(147,51,234,.15), transparent 32%), #080d1b; background-attachment: fixed; }
+    header h1 { background: linear-gradient(100deg,#fff 12%,#c4b5fd 55%,#67e8f9 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    section:not(.hidden) { border-color: rgba(129,140,248,.25) !important; box-shadow: 0 18px 50px rgba(0,0,0,.28), inset 0 1px rgba(255,255,255,.035); backdrop-filter: blur(14px); }
+    button { -webkit-tap-highlight-color: transparent; }
+    button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid #a5b4fc; outline-offset: 2px; }
+    #mode-switcher-bar { background: rgba(15,23,42,.82); box-shadow: 0 12px 30px rgba(0,0,0,.2); }
   </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between p-4 sm:p-6">
@@ -125,7 +131,7 @@
     <section id="screen-online-menu" class="hidden bg-slate-800/90 border border-slate-700/80 rounded-2xl p-5 sm:p-6 shadow-xl backdrop-blur-sm">
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-lg font-bold text-white">Online Multiplayer</h2>
-        <span class="text-[11px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2.5 py-0.5 rounded-full font-semibold">Live Rooms</span>
+        <span class="text-[11px] bg-amber-500/10 text-amber-300 border border-amber-400/25 px-2.5 py-0.5 rounded-full font-semibold">Online Beta</span>
       </div>
 
       <div class="mb-5">
@@ -135,7 +141,7 @@
 
       <div class="bg-slate-900/90 border border-indigo-500/30 rounded-2xl p-4 mb-4">
         <h3 class="text-sm font-bold text-indigo-300 mb-1">Host a New Game</h3>
-        <p class="text-xs text-slate-400 mb-3">Create a room and share the 4-digit code with your friends.</p>
+        <p class="text-xs text-slate-400 mb-3">Create a room and share the 4-digit code. Everyone needs an internet connection.</p>
         <button type="button" id="btn-create-room" class="w-full py-3 px-4 rounded-xl font-bold bg-indigo-600 hover:bg-indigo-500 text-white text-sm shadow-lg shadow-indigo-600/25 transition flex items-center justify-center gap-2">
           <span>Create Online Room</span>
         </button>
@@ -493,7 +499,7 @@
   </div>
 
   <footer class="text-center text-xs text-slate-500 py-3 mt-4">
-    Undercover Imposter - v2.6 (Music + 2 Imposters + Full Chat)
+    Undercover Imposter - v2.7 (Premium UI + Ad Retry + Online Privacy)
   </footer>
 
   <script>
@@ -987,30 +993,47 @@
     });
 
     function handleHostIncomingData(conn, data) {
+      if (!data || typeof data !== "object") return;
+      const sender = onlineRoomState.players.find(p => p.id === conn.peer);
       if (data.type === "JOIN") {
         if (onlineRoomState.players.length >= 8) return;
-        if (!onlineRoomState.players.find(p => p.id === data.id)) {
-          onlineRoomState.players.push({ id: data.id, name: data.name, wins: 0, voteId: "" });
+        if (!onlineRoomState.players.find(p => p.id === conn.peer)) {
+          const safeName = String(data.name || "Player").replace(/[<>]/g, "").trim().slice(0, 16) || "Player";
+          onlineRoomState.players.push({ id: conn.peer, name: safeName, wins: 0, voteId: "" });
         }
         onlineLobbyError.classList.add("hidden");
         broadcastRoomState();
-      } else if (data.type === "CLUE") {
+      } else if (data.type === "CLUE" && sender && onlineRoomState.status === "playing") {
+        const safeText = String(data.text || "").replace(/[<>]/g, "").trim().slice(0, 60);
+        if (!safeText) return;
         const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        onlineRoomState.clues.push({ name: data.name, text: data.text, time: timeStr });
+        onlineRoomState.clues.push({ name: sender.name, text: safeText, time: timeStr });
+        onlineRoomState.clues = onlineRoomState.clues.slice(-100);
         broadcastRoomState();
-      } else if (data.type === "VOTE") {
-        const player = onlineRoomState.players.find(p => p.id === data.voterId);
-        if (player) player.voteId = data.suspectId;
+      } else if (data.type === "VOTE" && sender && onlineRoomState.status === "playing") {
+        const suspectExists = onlineRoomState.players.some(p => p.id === data.suspectId);
+        if (!suspectExists || sender.voteId) return;
+        sender.voteId = data.suspectId;
         broadcastRoomState();
-        if (onlineRoomState.players.every(p => p.voteId !== "")) {
-          finalizeOnlineRound();
-        }
+        if (onlineRoomState.players.every(p => p.voteId !== "")) finalizeOnlineRound();
       }
+    }
+
+    // Send only each guest's own secret role and word during a live round.
+    function createGuestState(playerId) {
+      const snapshot = JSON.parse(JSON.stringify(onlineRoomState));
+      if (snapshot.status === "playing") {
+        const isImposter = (onlineRoomState.imposterIds || []).includes(playerId);
+        snapshot.imposterIds = isImposter ? [playerId] : [];
+        snapshot.majorityWord = isImposter ? "" : onlineRoomState.majorityWord;
+        snapshot.imposterWord = isImposter ? onlineRoomState.imposterWord : "";
+      }
+      return snapshot;
     }
 
     function broadcastRoomState() {
       guestConnections.forEach(conn => {
-        if (conn.open) conn.send({ type: "STATE_UPDATE", state: onlineRoomState });
+        if (conn.open) conn.send({ type: "STATE_UPDATE", state: createGuestState(conn.peer) });
       });
       syncClientScreenWithState();
     }
