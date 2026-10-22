@@ -125,7 +125,7 @@
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
     }
-  </style>
+    .pg-hidden{display:none!important}\n</style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between p-4 sm:p-6">
 
@@ -142,7 +142,7 @@
     </div>
   </div>
 
-  <div class="max-w-md w-full mx-auto my-auto relative">
+  <div id="legacy-game-shell" class="pg-hidden">\n<div class="max-w-md w-full mx-auto my-auto relative">
 
     <!-- Top Action Bar -->
     <div class="flex items-center justify-between mb-3">
@@ -641,7 +641,7 @@
     </section>
   </div>
 
-  <footer class="text-center text-xs text-slate-500 py-3 mt-4">
+  </div>\n  <footer id="legacy-footer" class="pg-hidden text-center text-xs text-slate-500 py-3 mt-4">
     Undercover Imposter - v2.9 (Player Hub + Saved Progress + Quick Guide)
   </footer>
 
@@ -1863,5 +1863,5 @@
     renderCustomPairsList();
     renderScoreboards();
   </script>
-</body>
+  <script src="app-hub.js"></script>\n</body>
 </html>
