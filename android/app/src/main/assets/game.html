@@ -483,6 +483,7 @@
         <div id="result-players-list" class="space-y-1.5 text-sm"></div>
       </div>
 
+      <button id="btn-watch-reward" type="button" class="w-full py-3 mb-2 px-4 rounded-xl font-bold bg-amber-600 hover:bg-amber-500 text-white shadow-lg transition">Watch Ad for Bonus</button>
       <button id="btn-play-again" type="button" class="w-full py-3.5 px-4 rounded-xl font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg transition">
         <span id="play-again-text">Play Next Round</span>
       </button>
@@ -1683,8 +1684,19 @@
       showScreen(screenResult);
     });
 
+    document.getElementById("btn-watch-reward").addEventListener("click", () => {
+      Sound.click();
+      if (window.AndroidAds && window.AndroidAds.showRewarded) window.AndroidAds.showRewarded();
+      else showToast("Reward ads are available in the Android app.");
+    });
+
+    window.onInMobiRewardEarned = function () {
+      showToast("Thanks for watching! Bonus reward unlocked.");
+    };
+
     document.getElementById("btn-play-again").addEventListener("click", () => {
       Sound.click();
+      if (totalRoundsPlayed > 0 && totalRoundsPlayed % 3 === 0 && window.AndroidAds) window.AndroidAds.showInterstitial();
       if (activeGameMode === "online") {
         if (isOnlineHost) {
           onlineRoomState.status = "lobby";
