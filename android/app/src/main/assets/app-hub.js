@@ -19,7 +19,7 @@
     #pg-root .tile{min-height:128px;display:flex;flex-direction:column;justify-content:space-between;text-align:left;border:1px solid rgba(255,255,255,.13);background:linear-gradient(145deg,rgba(47,37,82,.96),rgba(22,29,54,.97));border-radius:20px;padding:15px}
     #pg-root .pill{font-size:9px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;padding:4px 8px;border-radius:99px;background:#ffffff16;color:#ddd6fe}
     #pg-root .nav{display:flex;justify-content:space-around;margin-top:20px;padding:10px;border:1px solid #ffffff20;border-radius:17px;background:#0b1020}
-    #pg-root .nav button{background:transparent;color:#c4b5fd;font-size:12px;padding:8px}
+    #pg-root .nav button{background:transparent;color:#c4b5fd;font-size:12px;padding:8px}\n    #pg-root .hub-topbar{display:flex;justify-content:flex-start;margin-bottom:14px}\n    #pg-root .hub-topbar button{border:1px solid #ffffff24;background:#11182b;color:#ddd6fe;border-radius:12px;padding:9px 13px;font-weight:700;font-size:12px}
   `;
   document.head.appendChild(style);
   const root = document.createElement("main");
@@ -388,7 +388,7 @@
     document.getElementById("pg-email").value = ""; document.getElementById("pg-password").value = "";
     setMode("login");
   });
-  client.auth.getSession().then(({data}) => {
+  window.pgHandleBack=function(){\n    if(!profileView.classList.contains("hidden")){profileView.classList.add("hidden");homeView.classList.remove("hidden");window.scrollTo(0,0);return true;}\n    if(!homeView.classList.contains("hidden"))return false;\n    if(!legacy.classList.contains("pg-hidden")){legacy.classList.add("pg-hidden");footer.classList.add("pg-hidden");homeView.classList.remove("hidden");profileView.classList.add("hidden");window.scrollTo(0,0);return true;}\n    const visibleMini=["pg-ttt","pg-rps-game","pg-quiz-game"].find(id=>{const el=document.getElementById(id);return el&&!el.classList.contains("hidden");});\n    if(visibleMini){document.getElementById(visibleMini).classList.add("hidden");homeView.classList.remove("hidden");window.scrollTo(0,0);return true;}\n    return false;\n  };\n  client.auth.getSession().then(({data}) => {
     if (data.session) showHome(data.session);
   }).catch(() => {});
 })();
