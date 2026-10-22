@@ -70,6 +70,8 @@
         <div class="tile"><div class="flex justify-between"><span class="text-3xl">🧠</span><span class="pill">Coming soon</span></div><div><h3 class="font-extrabold">Quiz Battle</h3><p class="text-[11px] text-slate-400">Challenge friends.</p></div></div>
         <div class="tile"><div class="flex justify-between"><span class="text-3xl">✊</span><span class="pill">Coming soon</span></div><div><h3 class="font-extrabold">Rock Paper Scissors</h3><p class="text-[11px] text-slate-400">Quick duels.</p></div></div>
         <button id="pg-tictactoe" class="tile text-left border-cyan-300/30"><div class="flex justify-between"><span class="text-3xl">❎</span><span class="pill">Playable · Offline bots</span></div><div><h3 class="font-extrabold">Tic Tac Toe</h3><p class="text-[11px] text-slate-400">Play locally against a bot.</p></div></button>
+        <button id="pg-rps-card" class="tile text-left border-cyan-300/30"><div class="flex justify-between"><span class="text-3xl">✊</span><span class="pill">Playable · Offline bots</span></div><div><h3 class="font-extrabold">Rock Paper Scissors</h3><p class="text-[11px] text-slate-400">Best of 5 against a bot.</p></div></button>
+        <button id="pg-quiz-card" class="tile text-left border-cyan-300/30"><div class="flex justify-between"><span class="text-3xl">🧠</span><span class="pill">Playable · Offline bots</span></div><div><h3 class="font-extrabold">Quiz Battle</h3><p class="text-[11px] text-slate-400">10 questions · Beat the bot.</p></div></button>
       </div>
       <nav class="nav"><button id="pg-home-nav">🏠 Home</button><button id="pg-profile-nav">👤 Profile</button><button id="pg-signout">↪ Sign out</button></nav>
       <p id="pg-home-message" class="text-center text-[10px] text-slate-500 mt-3"></p>
@@ -160,6 +162,152 @@
   document.getElementById("pg-ttt-new").addEventListener("click",tttNewGame);
   document.getElementById("pg-ttt-reset").addEventListener("click",()=>{tttScore.you=tttScore.draw=tttScore.bot=0;document.getElementById("pg-ttt-you-score").textContent="0";document.getElementById("pg-ttt-draw-score").textContent="0";document.getElementById("pg-ttt-bot-score").textContent="0";tttNewGame();});
 
+
+  const miniGames=document.createElement("div");
+  miniGames.className="mt-3";
+  miniGames.innerHTML=`
+    <section id="pg-rps-game" class="hidden panel">
+      <div class="flex justify-between"><button id="pg-rps-back" class="text-sm text-violet-200 font-bold">← Games</button><span class="pill">OFFLINE · BOT</span></div>
+      <h2 class="text-2xl font-black text-center mt-4">✊ Rock Paper Scissors</h2>
+      <p class="text-xs text-slate-400 text-center">First to 3 points wins</p>
+      <p id="pg-rps-status" class="text-center text-lg font-bold mt-5">Choose your move</p>
+      <div class="grid grid-cols-3 gap-2 mt-4">
+        <button class="pg-rps-choice rounded-2xl bg-slate-900 p-4 text-3xl" data-move="rock">✊<span class="block text-xs">Rock</span></button>
+        <button class="pg-rps-choice rounded-2xl bg-slate-900 p-4 text-3xl" data-move="paper">✋<span class="block text-xs">Paper</span></button>
+        <button class="pg-rps-choice rounded-2xl bg-slate-900 p-4 text-3xl" data-move="scissors">✌️<span class="block text-xs">Scissors</span></button>
+      </div>
+      <div class="grid grid-cols-2 gap-3 text-center mt-5">
+        <div class="rounded-xl bg-slate-900 p-3"><p class="text-xs text-cyan-300">YOU</p><p id="pg-rps-you" class="text-3xl font-black">0</p></div>
+        <div class="rounded-xl bg-slate-900 p-3"><p class="text-xs text-pink-300">BOT</p><p id="pg-rps-bot" class="text-3xl font-black">0</p></div>
+      </div>
+      <p id="pg-rps-last" class="text-center text-sm mt-4">Best of five rounds</p>
+      <button id="pg-rps-new" class="primary w-full rounded-xl py-3 mt-4 font-bold">New match</button>
+    </section>
+    <section id="pg-quiz-game" class="hidden panel">
+      <div class="flex justify-between"><button id="pg-quiz-back" class="text-sm text-violet-200 font-bold">← Games</button><span class="pill">OFFLINE · BOT</span></div>
+      <h2 class="text-2xl font-black text-center mt-4">🧠 Quiz Battle</h2>
+      <p class="text-xs text-slate-400 text-center">10 general knowledge questions</p>
+      <div class="flex justify-between text-xs mt-5"><span id="pg-quiz-progress">Question 1 / 10</span><span id="pg-quiz-score">You 0 · Bot 0</span></div>
+      <div class="h-1.5 bg-slate-800 rounded-full mt-2"><div id="pg-quiz-bar" class="h-1.5 bg-fuchsia-400 rounded-full" style="width:0%"></div></div>
+      <p id="pg-quiz-question" class="font-bold text-lg mt-5 min-h-14"></p>
+      <div id="pg-quiz-options" class="grid gap-2 mt-4"></div>
+      <p id="pg-quiz-feedback" class="text-sm text-center mt-4 min-h-10" aria-live="polite"></p>
+      <button id="pg-quiz-next" class="primary w-full rounded-xl py-3 mt-3 font-bold" disabled>Next question</button>
+      <div id="pg-quiz-result" class="hidden text-center mt-5"><p class="text-2xl font-black">Match complete</p><p id="pg-quiz-final" class="text-sm mt-2"></p><button id="pg-quiz-again" class="primary w-full rounded-xl py-3 mt-4 font-bold">Play again</button></div>
+    </section>`;
+  root.appendChild(miniGames);
+  let rpsHuman=0,rpsMachine=0,rpsFinished=false;
+  const rpsSymbols={rock:"✊",paper:"✋",scissors:"✌️"};
+  function rpsPaint(){
+    document.getElementById("pg-rps-you").textContent=rpsHuman;
+    document.getElementById("pg-rps-bot").textContent=rpsMachine;
+    document.querySelectorAll(".pg-rps-choice").forEach(b=>b.disabled=rpsFinished);
+  }
+  function rpsReset(){
+    rpsHuman=0;rpsMachine=0;rpsFinished=false;
+    document.getElementById("pg-rps-status").textContent="Choose your move";
+    document.getElementById("pg-rps-last").textContent="First to 3 points wins";
+    rpsPaint();
+  }
+  document.querySelectorAll(".pg-rps-choice").forEach(btn=>btn.addEventListener("click",()=>{
+    if(rpsFinished)return;
+    const human=btn.dataset.move;
+    const options=["rock","paper","scissors"];
+    const bot=options[Math.floor(Math.random()*3)];
+    let outcome="draw";
+    if(human!==bot)outcome=({rock:"scissors",paper:"rock",scissors:"paper"}[human]===bot)?"win":"lose";
+    if(outcome==="win")rpsHuman++;if(outcome==="lose")rpsMachine++;
+    document.getElementById("pg-rps-last").textContent="You "+rpsSymbols[human]+" · Bot "+rpsSymbols[bot]+" — "+(outcome==="draw"?"Draw":outcome==="win"?"You win this round":"Bot wins this round");
+    if(rpsHuman>=3||rpsMachine>=3){rpsFinished=true;document.getElementById("pg-rps-status").textContent=rpsHuman>=3?"🏆 You won the match!":"🤖 Bot won the match!";}
+    else document.getElementById("pg-rps-status").textContent=outcome==="draw"?"Tie — try again":outcome==="win"?"Good move!":"Next round!";
+    rpsPaint();
+  }));
+  document.getElementById("pg-rps-new").addEventListener("click",rpsReset);
+
+  const quizBank=[
+    {q:"Which is the largest planet in our solar system?",a:["Earth","Jupiter","Saturn","Mars"],c:1},
+    {q:"What is the capital of Rajasthan?",a:["Udaipur","Jodhpur","Jaipur","Kota"],c:2},
+    {q:"How many sides does a hexagon have?",a:["Five","Six","Seven","Eight"],c:1},
+    {q:"Which gas do plants absorb?",a:["Oxygen","Nitrogen","Carbon dioxide","Hydrogen"],c:2},
+    {q:"Who wrote India's national anthem?",a:["Bankim Chandra","Rabindranath Tagore","Sarojini Naidu","Premchand"],c:1},
+    {q:"What is the chemical symbol for gold?",a:["Ag","Gd","Go","Au"],c:3},
+    {q:"Which is the fastest land animal?",a:["Lion","Cheetah","Horse","Leopard"],c:1},
+    {q:"How many minutes are in 2.5 hours?",a:["120","135","150","180"],c:2},
+    {q:"Which ocean is the largest?",a:["Atlantic","Indian","Arctic","Pacific"],c:3},
+    {q:"What is the square root of 144?",a:["10","11","12","14"],c:2},
+    {q:"Which city is called the Pink City?",a:["Jaipur","Jaisalmer","Bikaner","Ajmer"],c:0},
+    {q:"Which part is known as a computer's brain?",a:["RAM","CPU","SSD","Monitor"],c:1},
+    {q:"At sea level, water boils at?",a:["90°C","95°C","100°C","110°C"],c:2},
+    {q:"What is India's national animal?",a:["Elephant","Lion","Bengal tiger","Peacock"],c:2},
+    {q:"How many players per team are on a football field?",a:["9","10","11","12"],c:2}
+  ];
+  let quizSet=[],quizAt=0,quizHuman=0,quizMachine=0,quizAnswered=false;
+  function quizScore(){document.getElementById("pg-quiz-score").textContent="You "+quizHuman+" · Bot "+quizMachine;}
+  function quizStart(){
+    quizSet=quizBank.slice().sort(()=>Math.random()-.5).slice(0,10);
+    quizAt=0;quizHuman=0;quizMachine=0;quizAnswered=false;
+    document.getElementById("pg-quiz-result").classList.add("hidden");
+    document.getElementById("pg-quiz-next").classList.remove("hidden");
+    quizRender();
+  }
+  function quizRender(){
+    const q=quizSet[quizAt];
+    quizAnswered=false;
+    document.getElementById("pg-quiz-progress").textContent="Question "+(quizAt+1)+" / 10";
+    document.getElementById("pg-quiz-bar").style.width=(quizAt*10)+"%";
+    document.getElementById("pg-quiz-question").textContent=q.q;
+    document.getElementById("pg-quiz-feedback").textContent="";
+    const area=document.getElementById("pg-quiz-options");area.innerHTML="";
+    q.a.forEach((answer,i)=>{
+      const b=document.createElement("button");b.type="button";
+      b.className="w-full text-left rounded-xl bg-slate-900 border border-white/10 p-3 text-sm";
+      b.textContent=String.fromCharCode(65+i)+". "+answer;
+      b.addEventListener("click",()=>quizAnswer(i));area.appendChild(b);
+    });
+    const next=document.getElementById("pg-quiz-next");next.disabled=true;
+    next.textContent=quizAt===9?"Show results":"Next question";quizScore();
+  }
+  function quizAnswer(choice){
+    if(quizAnswered)return;quizAnswered=true;
+    const q=quizSet[quizAt];
+    const botChance=quizAt<4?.5:quizAt<7?.7:.85;
+    const botRight=Math.random()<botChance;
+    if(choice===q.c)quizHuman++;if(botRight)quizMachine++;
+    document.querySelectorAll("#pg-quiz-options button").forEach((b,i)=>{
+      b.disabled=true;
+      if(i===q.c)b.classList.add("border-emerald-400");
+      else if(i===choice)b.classList.add("border-rose-400");
+    });
+    document.getElementById("pg-quiz-feedback").textContent=(choice===q.c?"Correct! ":"Not quite. Answer: "+q.a[q.c]+". ")+"Bot "+(botRight?"answered correctly.":"got it wrong.");
+    quizScore();document.getElementById("pg-quiz-next").disabled=false;
+  }
+  function quizNext(){
+    if(!quizAnswered)return;
+    if(quizAt<9){quizAt++;quizRender();return;}
+    document.getElementById("pg-quiz-bar").style.width="100%";
+    document.getElementById("pg-quiz-options").innerHTML="";
+    document.getElementById("pg-quiz-question").textContent="";
+    document.getElementById("pg-quiz-feedback").textContent="";
+    document.getElementById("pg-quiz-next").classList.add("hidden");
+    document.getElementById("pg-quiz-result").classList.remove("hidden");
+    document.getElementById("pg-quiz-final").textContent="You: "+quizHuman+"/10 · Bot: "+quizMachine+"/10 — "+(quizHuman>quizMachine?"You win! 🎉":quizHuman<quizMachine?"Bot wins this time. 🤖":"It's a draw! 🤝");
+  }
+  document.getElementById("pg-quiz-next").addEventListener("click",quizNext);
+  document.getElementById("pg-quiz-again").addEventListener("click",quizStart);
+  function openMiniGame(id){
+    homeView.classList.add("hidden");
+    document.getElementById(id).classList.remove("hidden");
+    window.scrollTo({top:0,behavior:"smooth"});
+  }
+  function closeMiniGame(id){
+    document.getElementById(id).classList.add("hidden");
+    homeView.classList.remove("hidden");
+    window.scrollTo({top:0,behavior:"smooth"});
+  }
+  document.getElementById("pg-rps-card").addEventListener("click",()=>{openMiniGame("pg-rps-game");rpsReset();});
+  document.getElementById("pg-quiz-card").addEventListener("click",()=>{openMiniGame("pg-quiz-game");quizStart();});
+  document.getElementById("pg-rps-back").addEventListener("click",()=>closeMiniGame("pg-rps-game"));
+  document.getElementById("pg-quiz-back").addEventListener("click",()=>closeMiniGame("pg-quiz-game"));
   let mode = "login";
   let session = null;
   const authView = document.getElementById("pg-auth");
