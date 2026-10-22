@@ -65,6 +65,22 @@ Online actions must be validated server-side for competitive or hidden-informati
 #### Music content and rights
 The Bollywood Music Quiz should prioritize recognizable Hindi film music and North-Indian audience relevance. Do not bundle or stream copyrighted song recordings without the required rights. Prefer licensed music sources or a rights-cleared content pack; until then, build the quiz around legally usable text clues, trivia, and metadata.
 
+## Offline solo play and bot opponents
+
+Bot opponents are a supported product feature, but not a requirement for every game. Where feasible, a player should be able to start an offline solo match against one or more local bots without signing in or using the network. Bots must run on-device; do not depend on a hosted AI API for offline play.
+
+### Recommended bot support by game
+- Strong fit for solo bots: Tic Tac Toe, Rock Paper Scissors, Ludo, Snakes & Ladders, Memory Match, Quiz Battle, 20 Questions, Name Place Animal Thing / Stop, Bollywood Music Quiz, and Bollywood Dialogue Challenge.
+- Possible with a designed single-player format: Dumb Charades (offline prompt/round host), Who Am I? (offline clue/host mode), and Pictionary (curated bot-drawn prompts or a solo drawing-and-guessing challenge; drawing recognition is not required for the first version).
+- Advanced / later experiment: Undercover Imposter, Mafia/Werewolf, and Spyfall. These require believable hidden-role decisions and carefully isolated private information; do not promise them for the first bot release.
+
+### Bot design principles
+- Offer selectable difficulty where it makes sense (Easy, Medium, Hard); use deterministic rules, local question banks, and lightweight heuristics rather than cloud AI.
+- Bots should have distinct names/avatars and sensible turn timing, but must never pretend to be human players in online rooms.
+- Keep solo bot matches separate from online multiplayer stats/leaderboards unless explicitly labelled and balanced.
+- Support offline play with no network permission dependency after game assets and question packs are installed.
+- Build and test bot behavior game-by-game; never expose hidden answers or private roles to the player before rules allow them.
+
 ## Data model direction
 Reuse the existing Undercover tables and Edge Function until their responsibilities are deliberately generalized. Add shared tables in a separately reviewed migration:
 - player_profiles
