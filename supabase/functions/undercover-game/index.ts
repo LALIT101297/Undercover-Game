@@ -56,6 +56,32 @@ async function finishRound(room: any, state: any) {
   }
   state.status = "result";
   await saveRoom(room, state, "result");
+  // Persist each player's result once; the composite key prevents retry duplicates.
+  for (const p of state.players) {
+    const isImposter = (state.imposterIds || []).includes(p.id);
+    const won = isImposter ? !caught : caught;
+    const { error: resultError } = await admin.from("game_round_results").insert({
+      round_id: state.roundId, user_id: p.id, room_code: room.room_code,
+      player_name: p.name, role: isImposter ? "imposter" : "citizen", won
+    });
+    if (resultError) {
+      if (resultError.code === "23505") continue;
+      console.error("Could not persist round result", resultError);
+      continue;
+    }
+    const { data: profile } = await admin.from("game_player_profiles")
+      .select("display_name,rounds_played,wins,imposter_wins,citizen_wins")
+      .eq("user_id", p.id).maybeSingle();
+    const { error: profileError } = await admin.from("game_player_profiles").upsert({
+      user_id: p.id, display_name: clean(profile?.display_name || p.name, 16) || "Player",
+      rounds_played: (profile?.rounds_played || 0) + 1,
+      wins: (profile?.wins || 0) + (won ? 1 : 0),
+      imposter_wins: (profile?.imposter_wins || 0) + (isImposter && won ? 1 : 0),
+      citizen_wins: (profile?.citizen_wins || 0) + (!isImposter && won ? 1 : 0),
+      updated_at: new Date().toISOString()
+    }, { onConflict: "user_id" });
+    if (profileError) console.error("Could not update player profile", profileError);
+  }
   return state;
 }
 
@@ -66,8 +92,25 @@ Deno.serve(async (req: Request) => {
     const user = await getUser(req);
     const body = await req.json();
     const action = clean(body.action, 20);
+    if (action === "profile") {
+      const name = clean(body.name, 16) || "Player";
+      const { data: profile, error } = await admin.from("game_player_profiles").upsert({
+        user_id: user.id, display_name: name, updated_at: new Date().toISOString()
+      }, { onConflict: "user_id" }).select("display_name,rounds_played,wins,imposter_wins,citizen_wins").single();
+      if (error) throw error;
+      return reply({ profile });
+    }
+    if (action === "leaderboard") {
+      const { data, error } = await admin.from("game_player_profiles")
+        .select("display_name,rounds_played,wins,imposter_wins,citizen_wins")
+        .gt("rounds_played", 0).order("wins", { ascending: false })
+        .order("rounds_played", { ascending: false }).limit(20);
+      if (error) throw error;
+      return reply({ leaderboard: data || [] });
+    }
     if (action === "create") {
       const name = clean(body.name, 16) || "Player";
+      await admin.from("game_player_profiles").upsert({ user_id: user.id, display_name: name, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
       let roomCode = "";
       for (let i = 0; i < 12; i++) {
         roomCode = String(1000 + Math.floor(Math.random() * 9000));
@@ -92,6 +135,7 @@ Deno.serve(async (req: Request) => {
       if (room.status !== "lobby") throw new Error("This game has already started.");
       if (room.state.players.length >= 8) throw new Error("Room is full (8 players maximum).");
       const name = clean(body.name, 16) || "Player";
+      await admin.from("game_player_profiles").upsert({ user_id: user.id, display_name: name, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
       const { error: insertError } = await admin.from("game_room_members").insert({ room_id: room.id, user_id: user.id, display_name: name });
       if (insertError) throw insertError;
       const state = { ...room.state, players: [...room.state.players, { id: user.id, name, wins: 0, voteId: "" }] };
@@ -126,6 +170,7 @@ Deno.serve(async (req: Request) => {
       state.status = "playing"; state.categoryName = clean(body.categoryName, 30) || "MIXED";
       state.imposterCount = count; state.majorityWord = majority; state.imposterWord = imposter;
       state.imposterIds = ids; state.clues = []; state.topSuspectId = "";
+      state.roundId = crypto.randomUUID();
       state.players = state.players.map((p: any) => ({ ...p, voteId: "" }));
       await saveRoom(room, state, "playing");
       return reply({ state: publicState(state, user.id, room.host_id), isHost: true });
