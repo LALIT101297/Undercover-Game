@@ -79,6 +79,9 @@ Bot opponents are a supported product feature, but not a requirement for every g
 - Bots should have distinct names/avatars and sensible turn timing, but must never pretend to be human players in online rooms.
 - Keep solo bot matches separate from online multiplayer stats/leaderboards unless explicitly labelled and balanced.
 - Support offline play with no network permission dependency after game assets and question packs are installed.
+- Support bots in both offline solo matches and online rooms where the specific game supports it (for example, a room can contain human players plus bot seats). The room host can add/remove bots and select difficulty before the match starts; bots must be clearly labelled as bots.
+- Online bots must be controlled by trusted server-side game logic or validated server actions, not arbitrary client scripts. Never let a bot reveal hidden roles, secret words, or answers early.
+- Keep bot availability game-specific. If a game cannot support fair or believable online bots, show the bot option only in offline mode for that game.
 - Build and test bot behavior game-by-game; never expose hidden answers or private roles to the player before rules allow them.
 
 ## Data model direction
