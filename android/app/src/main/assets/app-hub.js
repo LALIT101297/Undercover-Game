@@ -334,7 +334,7 @@
     <section id="pg-snl-game" class="hidden panel">
       <div class="flex justify-between"><button class="pg-extra-back text-sm text-violet-200 font-bold">← Games</button><span class="pill">OFFLINE · 2–4 PLAYERS</span></div>
       <h2 class="text-2xl font-black text-center mt-3">🐍 Snakes & Ladders</h2>
-      <div id="pg-snl-board" class="grid grid-cols-10 gap-1 mt-4"></div>
+      <div id="pg-snl-wrap" class="relative mt-4"><div id="pg-snl-board" class="grid grid-cols-10 gap-1"></div><svg id="pg-snl-art" class="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none"></svg></div>
       <p id="pg-snl-status" class="text-center font-bold mt-4">Set up players</p>
       <div id="pg-snl-controls" class="mt-3 space-y-2"></div>
     </section>
@@ -469,31 +469,17 @@
   const snlJumps={4:14,9:31,17:7,20:38,28:84,40:59,51:67,54:34,62:19,63:81,64:60,71:91,87:24,93:73,95:75,99:78};
   let snlPlayers=[],snlTurn=0,snlDone=false,snlRolling=false,snlLastRoll=0,snlMessage="";
   const diceFaces=["⚀","⚁","⚂","⚃","⚄","⚅"];
+  const snlPoint=n=>{const row=Math.floor((n-1)/10),offset=(n-1)%10,col=row%2===0?offset:9-offset;return {x:col*10+5,y:(9-row)*10+5};};
+  function snlArtwork(){const svg=$id("pg-snl-art");let out="";Object.entries(snlJumps).forEach(([fs,ts])=>{const from=snlPoint(+fs),to=snlPoint(ts),ladder=ts>+fs,dx=to.x-from.x,dy=to.y-from.y;if(ladder){const len=Math.hypot(dx,dy)||1,ox=-dy/len*1.7,oy=dx/len*1.7;out+='<g stroke="#fbbf24" stroke-width="1.05" stroke-linecap="round"><path d="M '+(from.x+ox)+' '+(from.y+oy)+' L '+(to.x+ox)+' '+(to.y+oy)+'"/><path d="M '+(from.x-ox)+' '+(from.y-oy)+' L '+(to.x-ox)+' '+(to.y-oy)+'"/>';for(let t=.12;t<.95;t+=.16){const x=from.x+dx*t,y=from.y+dy*t;out+='<path d="M '+(x+ox)+' '+(y+oy)+' L '+(x-ox)+' '+(y-oy)+'"/>';}out+='</g>';}else{const len=Math.hypot(dx,dy)||1,cx=(from.x+to.x)/2+(dy/len)*Math.min(12,len*.22),cy=(from.y+to.y)/2-(dx/len)*Math.min(12,len*.22);out+='<g><path d="M '+from.x+' '+from.y+' Q '+cx+' '+cy+' '+to.x+' '+to.y+'" fill="none" stroke="#fb7185" stroke-width="2.5" stroke-linecap="round"/><path d="M '+from.x+' '+from.y+' Q '+cx+' '+cy+' '+to.x+' '+to.y+'" fill="none" stroke="#fecdd3" stroke-width=".7" stroke-dasharray="1 2"/><circle cx="'+from.x+'" cy="'+from.y+'" r="2.2" fill="#fb7185"/><path d="M '+(to.x-1.7)+' '+(to.y-1)+' Q '+to.x+' '+(to.y-3)+' '+(to.x+1.7)+' '+(to.y-1)+' L '+(to.x+1.2)+' '+(to.y+1.5)+' L '+(to.x-1.2)+' '+(to.y+1.5)+' Z" fill="#fb7185"/></g>';}});svg.innerHTML=out;}
+  function snlDieFace(n){const pip={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]}[n]||[4];return '<div class="mx-auto w-14 h-14 rounded-xl flex items-center justify-center shadow-lg" style="background:linear-gradient(145deg,#fb7185,#8b5cf6 58%,#3b82f6);border:2px solid #ffffff88"><div class="grid grid-cols-3 grid-rows-3 gap-1 w-9 h-9">'+Array.from({length:9},(_,i)=>'<i class="rounded-full '+(pip.includes(i)?'bg-white shadow':'bg-transparent')+'"></i>').join("")+'</div></div>';}
   const wait=ms=>new Promise(resolve=>window.setTimeout(resolve,ms));
   function snlDraw(){
     const board=$id("pg-snl-board");board.innerHTML="";
-    for(let row=9;row>=0;row--){const nums=Array.from({length:10},(_,i)=>row%2===0?row*10+i+1:row*10+10-i);nums.forEach(n=>{
-      const cell=document.createElement("div");cell.className="aspect-square rounded-md border border-white/10 flex flex-col items-center justify-center text-[9px] relative overflow-hidden "+(snlJumps[n]?(snlJumps[n]>n?"bg-emerald-900":"bg-rose-950"):"bg-slate-800");
-      const jump=snlJumps[n],players=snlPlayers.filter(p=>p.pos===n);
-      cell.innerHTML='<span class="font-bold">'+n+'</span>'+(jump?'<b class="text-[10px]">'+(jump>n?'🪜 ↑'+jump:'🐍 ↓'+jump)+'</b>':'')+(players.length?'<span class="text-[10px]">'+players.map(p=>p.bot?'🤖':'🔵').join("")+'</span>':'');
-      board.appendChild(cell);
-    });}
-    const controls=$id("pg-snl-controls");
-    controls.innerHTML=snlPlayers.map(p=>'<p class="text-xs py-1">'+p.name+': '+p.pos+'/100 '+(p.bot?"🤖":"👤")+'</p>').join("")+'<div class="rounded-xl bg-slate-900/80 border border-white/10 p-3 text-center"><div class="text-xs text-slate-400">LAST DICE ROLL</div><div class="text-5xl my-1">'+(snlLastRoll?diceFaces[snlLastRoll-1]:'🎲')+'</div><div class="text-sm font-bold">'+(snlMessage||"Ready to roll")+'</div></div>';
-    if(!snlDone&&!snlRolling&&snlPlayers.length){const p=snlPlayers[snlTurn],btn=document.createElement("button");btn.className="primary w-full rounded-xl py-3 font-bold mt-2";btn.textContent=p.bot?"🤖 Bot turn…":"🎲 Roll dice";btn.disabled=p.bot;btn.onclick=snlRoll;controls.appendChild(btn);}
-    if(snlDone){const again=document.createElement("button");again.className="primary w-full rounded-xl py-3 mt-2";again.textContent="Play again";again.onclick=launchSnl;controls.appendChild(again);}
-    if(snlPlayers.length&&!snlDone)$id("pg-snl-status").textContent=snlRolling?"Moving…":snlPlayers[snlTurn].name+"'s turn";
+    for(let row=9;row>=0;row--){const nums=Array.from({length:10},(_,i)=>row%2===0?row*10+i+1:row*10+10-i);nums.forEach(n=>{const cell=document.createElement("div");cell.className="aspect-square rounded-md border border-white/10 flex flex-col items-center justify-center text-[9px] relative overflow-hidden bg-slate-800/90";const players=snlPlayers.filter(p=>p.pos===n);cell.innerHTML='<span class="font-bold relative z-[1]">'+n+'</span>'+(players.length?'<span class="text-sm relative z-[1]">'+players.map(p=>p.bot?"🤖":"🔵").join("")+'</span>':"");board.appendChild(cell);});}
+    snlArtwork();const controls=$id("pg-snl-controls");controls.innerHTML=snlPlayers.map(p=>'<p class="text-xs py-1">'+p.name+': '+p.pos+'/100 '+(p.bot?"🤖":"👤")+'</p>').join("")+'<div class="rounded-xl bg-slate-900/80 border border-white/10 p-3 text-center"><div class="text-xs text-slate-400">LAST DICE ROLL</div><div class="my-2">'+snlDieFace(snlLastRoll||1)+'</div><div class="text-sm font-bold">'+(snlMessage||"Ready to roll")+'</div></div>';
+    if(!snlDone&&!snlRolling&&snlPlayers.length){const p=snlPlayers[snlTurn],btn=document.createElement("button");btn.className="primary w-full rounded-xl py-3 font-bold mt-2";btn.textContent=p.bot?"🤖 Bot turn…":"🎲 Roll dice";btn.disabled=p.bot;btn.onclick=snlRoll;controls.appendChild(btn);}if(snlDone){const again=document.createElement("button");again.className="primary w-full rounded-xl py-3 mt-2";again.textContent="Play again";again.onclick=launchSnl;controls.appendChild(again);}if(snlPlayers.length&&!snlDone)$id("pg-snl-status").textContent=snlRolling?"Moving…":snlPlayers[snlTurn].name+"'s turn";
   }
-  async function snlRoll(){
-    if(snlDone||snlRolling||!snlPlayers.length)return;
-    snlRolling=true;const p=snlPlayers[snlTurn],d=1+Math.floor(Math.random()*6);snlLastRoll=d;snlMessage=p.name+" rolled "+d;snlDraw();await wait(550);
-    if(p.pos+d<=100){for(let step=0;step<d;step++){p.pos++;snlMessage=p.name+" moved to "+p.pos;snlDraw();await wait(170);}
-      if(snlJumps[p.pos]){const from=p.pos,to=snlJumps[from];snlMessage=to>from?"🪜 Ladder! "+from+" → "+to:"🐍 Snake! "+from+" → "+to;snlDraw();await wait(900);p.pos=to;}
-    }else snlMessage="Need an exact roll to reach 100";
-    if(p.pos===100){snlDone=true;snlMessage="🏆 "+p.name+" wins!";}
-    snlRolling=false;if(!snlDone)snlTurn=(snlTurn+1)%snlPlayers.length;snlDraw();
-    if(!snlDone&&snlPlayers[snlTurn].bot)window.setTimeout(snlRoll,650);
-  }
+  async function snlRoll(){if(snlDone||snlRolling||!snlPlayers.length)return;snlRolling=true;const p=snlPlayers[snlTurn],d=1+Math.floor(Math.random()*6);for(let i=0;i<7;i++){snlLastRoll=1+Math.floor(Math.random()*6);snlMessage="Rolling…";snlDraw();await wait(75);}snlLastRoll=d;snlMessage=p.name+" rolled "+d;snlDraw();await wait(450);if(p.pos+d<=100){for(let step=0;step<d;step++){p.pos++;snlMessage=p.name+" moved to "+p.pos;snlDraw();await wait(170);}if(snlJumps[p.pos]){const from=p.pos,to=snlJumps[from];snlMessage=to>from?"🪜 Climbing ladder "+from+" → "+to:"🐍 Snake bite! "+from+" → "+to;snlDraw();await wait(900);p.pos=to;snlDraw();await wait(350);}}else snlMessage="Need an exact roll to reach 100";if(p.pos===100){snlDone=true;snlMessage="🏆 "+p.name+" wins!";}snlRolling=false;if(!snlDone)snlTurn=(snlTurn+1)%snlPlayers.length;snlDraw();if(!snlDone&&snlPlayers[snlTurn].bot)window.setTimeout(snlRoll,650);}
   function launchSnl(){
     homeView.classList.add("hidden");$id("pg-snl-game").classList.remove("hidden");snlPlayers=[];snlTurn=0;snlDone=false;snlRolling=false;snlLastRoll=0;snlMessage="";
     $id("pg-snl-board").innerHTML="";$id("pg-snl-status").textContent="Choose players";
