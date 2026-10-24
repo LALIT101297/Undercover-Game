@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.graphics.Color;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
@@ -46,8 +47,12 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Keep the unused banner slot and system navigation area consistent with the game theme.
+        getWindow().setNavigationBarColor(Color.rgb(8, 13, 27));
         rootLayout = new RelativeLayout(this);
+        rootLayout.setBackgroundColor(Color.rgb(8, 13, 27));
         webView = new WebView(this);
+        webView.setBackgroundColor(Color.rgb(8, 13, 27));
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
@@ -86,6 +91,8 @@ public class MainActivity extends Activity {
     private void loadBanner() {
         if (isFinishing() || isDestroyed() || bannerAd != null) return;
         bannerAd = new InMobiBanner(this, BANNER_PLACEMENT_ID);
+        // InMobi may return no-fill while the inventory is under review; avoid a white empty strip.
+        bannerAd.setBackgroundColor(Color.rgb(8, 13, 27));
         bannerAd.setListener(new BannerAdEventListener() {
             @Override
             public void onAdLoadSucceeded(InMobiBanner ad, AdMetaInfo info) {
