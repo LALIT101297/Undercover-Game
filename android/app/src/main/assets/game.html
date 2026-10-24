@@ -126,7 +126,193 @@
       *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
     }
     .pg-hidden{display:none!important}
-</style>
+
+    /* Playful party-game theme — CSS-only; game state, storage, Supabase and ad hooks remain unchanged. */
+    :root{
+      color-scheme:light;
+      --party-ink:#24345f;
+      --party-muted:#6d7f9b;
+      --party-paper:#ffffff;
+      --party-sky:#eaf5ff;
+      --party-blue:#20b8dd;
+      --party-coral:#ff625f;
+      --party-lime:#89d24d;
+      --party-gold:#ffc23a;
+      --party-line:#d7e7f4;
+    }
+    html,body{background:var(--party-sky)!important;color:var(--party-ink)!important}
+    body{
+      position:relative;
+      min-height:100vh;
+      padding:14px 14px calc(76px + env(safe-area-inset-bottom))!important;
+      font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif!important;
+      letter-spacing:0;
+      background-image:radial-gradient(#bfd8eb 1px,transparent 1px)!important;
+      background-size:19px 19px!important;
+      background-attachment:fixed;
+    }
+    #legacy-game-shell,#legacy-footer,#custom-toast{position:relative;z-index:1}
+    #legacy-game-shell .max-w-md{width:min(100%,620px);max-width:620px}
+    #legacy-game-shell header{padding:12px 0 16px;margin-bottom:15px}
+    #legacy-game-shell header h1{
+      background:none!important;
+      color:var(--party-ink)!important;
+      font-size:clamp(1.8rem,6vw,2.35rem)!important;
+      font-weight:1000!important;
+      letter-spacing:-.055em!important;
+    }
+    #legacy-game-shell header p{color:#6f829e!important;font-weight:650}
+    #legacy-game-shell header>div:first-child{
+      border:4px solid #fff;
+      border-radius:23px!important;
+      box-shadow:0 5px 0 #263969,0 10px 22px rgba(47,82,123,.13)!important;
+    }
+    #legacy-game-shell section:not(.hidden),#audio-settings-panel,#stats-panel,#legacy-game-shell details{
+      background:#fff!important;
+      border:2px solid #fff!important;
+      border-radius:23px!important;
+      color:var(--party-ink)!important;
+      box-shadow:0 5px 0 #c9dceb,0 13px 27px rgba(48,84,124,.09)!important;
+      backdrop-filter:none!important;
+    }
+    #legacy-game-shell [class*="bg-slate-950"],#legacy-game-shell [class*="bg-slate-900"],#legacy-game-shell [class*="bg-slate-800"]{
+      background-color:#f0f7fc!important;
+      background-image:none!important;
+      border-color:#d9e8f3!important;
+    }
+    #legacy-game-shell .text-white,#legacy-game-shell .text-slate-100,#legacy-game-shell .text-slate-200,#legacy-game-shell .text-slate-300{
+      color:var(--party-ink)!important;
+    }
+    #legacy-game-shell .text-slate-400,#legacy-game-shell .text-slate-500{color:var(--party-muted)!important}
+    #legacy-game-shell .text-indigo-300,#legacy-game-shell .text-indigo-400{color:#4266a3!important}
+    #legacy-game-shell .text-cyan-300,#legacy-game-shell .text-cyan-400{color:#1685a4!important}
+    #legacy-game-shell .text-emerald-300,#legacy-game-shell .text-emerald-400{color:#278a68!important}
+    #legacy-game-shell .text-amber-300,#legacy-game-shell .text-amber-400{color:#956500!important}
+    #legacy-game-shell .text-rose-300,#legacy-game-shell .text-rose-400{color:#c24856!important}
+    #legacy-game-shell button{
+      border-radius:14px;
+      font-weight:850;
+      transition:transform .16s ease,box-shadow .16s ease,filter .16s ease;
+      -webkit-tap-highlight-color:transparent;
+      touch-action:manipulation;
+    }
+    #legacy-game-shell button:active{transform:translateY(2px) scale(.985);filter:brightness(1.03)}
+    #legacy-game-shell button:focus-visible,#legacy-game-shell input:focus-visible,#legacy-game-shell select:focus-visible{
+      outline:3px solid #20b8dd!important;outline-offset:2px
+    }
+    #legacy-game-shell button[class*="bg-indigo-600"],#legacy-game-shell button[class*="bg-indigo-500"]{
+      background:linear-gradient(110deg,#27396f,#4262a0)!important;
+      color:#fff!important;border:0!important;box-shadow:0 4px 0 #1e2d5b!important
+    }
+    #legacy-game-shell button[class*="bg-emerald-600"],#legacy-game-shell button[class*="bg-emerald-700"]{
+      background:linear-gradient(110deg,#8bd24e,#50b990)!important;
+      color:#173f36!important;border:0!important;box-shadow:0 4px 0 #4d9e59!important
+    }
+    #legacy-game-shell button[class*="bg-rose-600"],#legacy-game-shell button[class*="bg-rose-500"]{
+      background:linear-gradient(110deg,#ff7770,#ef5d85)!important;
+      color:#fff!important;border:0!important;box-shadow:0 4px 0 #c84b62!important
+    }
+    #legacy-game-shell button[class*="bg-amber-500"],#legacy-game-shell button[class*="bg-amber-400"]{
+      background:linear-gradient(110deg,#ffd45b,#ffb82f)!important;
+      color:#4a3510!important;border:0!important;box-shadow:0 4px 0 #d79727!important
+    }
+    #legacy-game-shell input:not([type="range"]),#legacy-game-shell select{
+      background:#fff!important;color:var(--party-ink)!important;
+      border:2px solid #d8e7f3!important;border-radius:13px!important;
+      min-height:46px;font:inherit
+    }
+    #legacy-game-shell input::placeholder{color:#93a4b9!important}
+    #mode-switcher-bar{
+      background:#fff!important;border:3px solid #fff!important;
+      border-radius:19px!important;padding:6px!important;
+      box-shadow:0 4px 0 #c9dceb!important
+    }
+    #mode-switcher-bar button{min-height:45px;border-radius:13px!important}
+    #screen-setup h2,#screen-pass h2,#screen-discuss h2,#screen-result h2,
+    #screen-online-menu h2,#screen-online-lobby h2,#screen-online-game h2{color:var(--party-ink)!important;letter-spacing:-.035em}
+    #screen-setup .bg-slate-900\/90,#screen-online-menu .bg-slate-900\/90,
+    #screen-online-lobby .bg-slate-900,#screen-online-game .bg-slate-900\/95,
+    #screen-discuss .bg-slate-900\/90,#screen-pass .bg-slate-900\/80{
+      background:#f1f8fd!important;border-color:#d9e8f3!important
+    }
+    #player-inputs>div{
+      background:#f5faff;border:1px solid #dceaf5;border-radius:16px;
+      padding:7px;box-shadow:0 2px 0 #e4eef6
+    }
+    #player-inputs>div>div:first-child{
+      width:36px!important;height:36px!important;border:3px solid #263969;
+      border-radius:14px 14px 14px 50%!important;color:#fff!important;
+      box-shadow:0 2px 0 rgba(30,47,91,.14)
+    }
+    #setup-scoreboard-list>div,#stats-leaderboard>div,#cloud-leaderboard>div,
+    #result-players-list>div,#lobby-players-list>div{
+      background:#f3f9fd!important;border:1px solid #dfebf4!important;
+      border-radius:13px!important;padding:10px 12px
+    }
+    #setup-scoreboard-list>div>span:last-child,#stats-leaderboard>div>span:last-child,
+    #cloud-leaderboard>div>span:last-child{background:#fff4d4;border-radius:99px;padding:4px 8px;color:#91600b!important}
+    #btn-add-player,#btn-reset-scores,#btn-toggle-custom-form,#btn-close-stats,
+    #btn-close-audio-modal,#btn-copy-code,#btn-leave-room{
+      background:#eaf4fb!important;color:#3b557f!important;border:1px solid #d6e5f1!important
+    }
+    #card-hidden{
+      background:linear-gradient(145deg,#f0f8ff,#fff)!important;
+      border:3px dashed #9fc9e2!important;min-height:190px
+    }
+    #card-revealed{
+      background:linear-gradient(145deg,#fff8d9,#e8f8ff)!important;
+      border:3px solid #f3d781!important;
+      box-shadow:inset 0 0 0 4px rgba(255,255,255,.8)
+    }
+    #revealed-word{color:#b06d12!important;font-size:clamp(2rem,8vw,2.8rem)!important}
+    #pass-step-indicator{color:#347ca0!important}
+    #timer-container{background:#f0f8fd!important;border:1px solid #dceaf4!important}
+    #timer-display{color:var(--party-ink)!important}
+    #timer-bar{background:#20b8df!important}
+    #voting-players-grid button,#online-voting-grid button{
+      background:#f3f9fd!important;border:2px solid #dceaf4!important;
+      color:var(--party-ink)!important;min-height:54px
+    }
+    #screen-result #outcome-banner{
+      background:linear-gradient(100deg,#e7f8dd,#f3ffeb)!important;
+      border:2px solid #9bd36a!important;border-radius:20px!important
+    }
+    #screen-result #outcome-banner h3{color:#387b34!important;font-weight:1000}
+    #result-majority-word,#result-imposter-word{overflow-wrap:anywhere}
+    #result-players-list>div{min-height:42px}
+    #screen-online-menu .bg-slate-900\/90,#screen-online-lobby .bg-slate-900,
+    #screen-online-game .bg-slate-900\/95{border-radius:17px!important}
+    #lobby-room-code{
+      color:#a66c11!important;text-shadow:none!important;
+      letter-spacing:.14em;font-size:clamp(2.3rem,9vw,3.1rem)!important
+    }
+    #online-my-word{color:#a46a11!important}
+    #online-clues-list>div{background:#f1f8fd!important;border-color:#dceaf4!important}
+    #custom-toast{
+      background:#fff!important;border:2px solid #ff9b9a!important;
+      border-radius:17px!important;box-shadow:0 8px 25px rgba(40,59,94,.18)!important
+    }
+    #toast-message{color:#273760!important}
+    #toast-badge{background:#ff625f!important}
+    #pg-return-home{
+      background:#fff!important;color:#293b69!important;border:2px solid #d8e7f3!important;
+      box-shadow:0 3px 0 #c9dceb!important
+    }
+    #legacy-footer{color:#7185a2!important;padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+    .timer-progress{border-radius:999px;transition:width 1s linear}
+    @media(max-width:380px){
+      body{padding-left:10px!important;padding-right:10px!important}
+      #screen-setup,#screen-pass,#screen-discuss,#screen-result{padding:16px!important}
+      #player-inputs>div{gap:6px}
+      #result-majority-word,#result-imposter-word{font-size:15px}
+    }
+    @media(prefers-reduced-motion:reduce){
+      #legacy-game-shell *,#legacy-game-shell *:before,#legacy-game-shell *:after{
+        transition-duration:.01ms!important;animation-duration:.01ms!important
+      }
+    }
+
+  </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between p-4 sm:p-6">
 
