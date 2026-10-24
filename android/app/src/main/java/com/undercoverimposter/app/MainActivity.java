@@ -270,6 +270,18 @@ public class MainActivity extends Activity {
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        if (bannerAd != null) bannerAd.resume();
+    }
+
+    @Override
+    protected void onPause() {
+        if (bannerAd != null) bannerAd.pause();
+        super.onPause();
+    }
+
+    @Override
     protected void onDestroy() {
         adHandler.removeCallbacksAndMessages(null);
         if (bannerAd != null) {
