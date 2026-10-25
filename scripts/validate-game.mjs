@@ -9,9 +9,7 @@ const hub = read("android/app/src/main/assets/app-hub.js");
 const edge = read("supabase/functions/undercover-game/index.ts");
 const atomicStatsMigration = read("supabase/migrations/20261025004626_atomic_round_stats.sql");
 
-const inlineScripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)];
-  .map((match) => match[1])
-  .filter((script) => script.trim());
+const inlineScripts = [...html.matchAll(/<script\\b[^>]*>([\\s\\S]*?)<\\/script>/gi)]\n  .map((match) => match[1]);
 assert.ok(inlineScripts.length, "game.html must contain its game engine");
 for (const [index, script] of inlineScripts.entries()) {
   new vm.Script(script, { filename: "game-inline-" + index + ".js" });
