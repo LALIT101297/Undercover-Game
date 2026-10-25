@@ -28,19 +28,27 @@ async function isMember(roomId: string, userId: string) {
   const { data } = await admin.from("game_room_members").select("display_name").eq("room_id", roomId).eq("user_id", userId).maybeSingle();
   return data;
 }
-function publicState(state: any, userId: string, hostId: string) {
+function publicState(state: any, userId: string, _hostId: string) {
   const copy = structuredClone(state);
-  if (copy.status === "playing" && userId !== hostId) {
-    const imp = (copy.imposterIds || []).includes(userId);
-    copy.imposterIds = imp ? [userId] : [];
-    copy.majorityWord = imp ? "" : copy.majorityWord;
-    copy.imposterWord = imp ? copy.imposterWord : "";
+  if (copy.status === "playing") {
+    // The host is a player too: never send every role/word to the host client.
+    const isImposter = (copy.imposterIds || []).includes(userId);
+    copy.imposterIds = isImposter ? [userId] : [];
+    copy.majorityWord = isImposter ? "" : copy.majorityWord;
+    copy.imposterWord = isImposter ? copy.imposterWord : "";
   }
   return copy;
 }
 async function saveRoom(room: any, state: any, status = state.status) {
-  const { error } = await admin.from("game_rooms").update({ state, status, updated_at: new Date().toISOString() }).eq("id", room.id);
+  // Compare-and-set prevents two devices overwriting a newer room state.
+  const { data, error } = await admin.from("game_rooms")
+    .update({ state, status, updated_at: new Date().toISOString() })
+    .eq("id", room.id)
+    .eq("updated_at", room.updated_at)
+    .select("id")
+    .maybeSingle();
   if (error) throw error;
+  if (!data) throw new Error("This room changed on another device. Refresh and try again.");
 }
 async function finishRound(room: any, state: any) {
   const counts: Record<string, number> = {};
