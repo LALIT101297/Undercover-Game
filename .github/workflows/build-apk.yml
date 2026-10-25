@@ -19,6 +19,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
@@ -44,11 +48,10 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.11.1'
-      - name: Validate game JavaScript
-        run: |
-          node -e 'const fs=require("fs"); const html=fs.readFileSync("android/app/src/main/assets/game.html","utf8"); const scripts=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(m=>m[1]).filter(s=>s.trim()); if (!scripts.length) throw new Error("No inline game script found"); fs.writeFileSync(process.env.RUNNER_TEMP+"/game-inline.js", scripts[scripts.length-1]);'
-          node --check "$RUNNER_TEMP/game-inline.js"
-          node --check android/app/src/main/assets/app-hub.js
+      - name: Prepare offline runtime assets
+        run: bash android/prepare-assets.sh
+      - name: Validate game and backend integration
+        run: node scripts/validate-game.mjs
       - name: Build signed debug APK
         run: gradle -p android assembleDebug
       - name: Rename APK for release
