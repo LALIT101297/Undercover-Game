@@ -175,10 +175,11 @@
       box-shadow:0 5px 0 #c9dceb,0 13px 27px rgba(48,84,124,.09)!important;
       backdrop-filter:none!important;
     }
-    #legacy-game-shell [class*="bg-slate-950"],#legacy-game-shell [class*="bg-slate-900"],#legacy-game-shell [class*="bg-slate-800"]{
+    #legacy-game-shell [class*="bg-slate-950"],#legacy-game-shell [class*="bg-slate-900"],#legacy-game-shell [class*="bg-slate-800"],#legacy-game-shell [class*="bg-slate-700"],#legacy-game-shell [class*="bg-slate-600"]{
       background-color:#f0f7fc!important;
       background-image:none!important;
       border-color:#d9e8f3!important;
+      color:var(--party-ink)!important;
     }
     #legacy-game-shell .text-white,#legacy-game-shell .text-slate-100,#legacy-game-shell .text-slate-200,#legacy-game-shell .text-slate-300{
       color:var(--party-ink)!important;
@@ -273,11 +274,17 @@
       background:#f3f9fd!important;border:2px solid #dceaf4!important;
       color:var(--party-ink)!important;min-height:54px
     }
-    #screen-result #outcome-banner{
+    #screen-result #outcome-banner{border-radius:20px!important}
+    #screen-result #outcome-banner[class*="emerald"]{
       background:linear-gradient(100deg,#e7f8dd,#f3ffeb)!important;
-      border:2px solid #9bd36a!important;border-radius:20px!important
+      border:2px solid #9bd36a!important
     }
-    #screen-result #outcome-banner h3{color:#387b34!important;font-weight:1000}
+    #screen-result #outcome-banner[class*="rose"]{
+      background:linear-gradient(100deg,#fff0ed,#ffe4ea)!important;
+      border:2px solid #f2a0a2!important
+    }
+    #screen-result #outcome-banner[class*="emerald"] h3{color:#387b34!important;font-weight:1000}
+    #screen-result #outcome-banner[class*="rose"] h3{color:#b74458!important;font-weight:1000}
     #result-majority-word,#result-imposter-word{overflow-wrap:anywhere}
     #result-players-list>div{min-height:42px}
     #screen-online-menu .bg-slate-900\/90,#screen-online-lobby .bg-slate-900,
