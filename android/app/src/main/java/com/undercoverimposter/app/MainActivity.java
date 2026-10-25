@@ -86,14 +86,19 @@ public class MainActivity extends Activity {
     private void loadBanner() {
         if (isFinishing() || isDestroyed() || bannerAd != null) return;
         bannerAd = new InMobiBanner(this, BANNER_PLACEMENT_ID);
+        // Keep a dark surface when the banner loads; collapse it entirely on no-fill.
+        bannerAd.setBackgroundColor(android.graphics.Color.rgb(8, 13, 27));
         bannerAd.setListener(new BannerAdEventListener() {
             @Override
             public void onAdLoadSucceeded(InMobiBanner ad, AdMetaInfo info) {
                 bannerRetryCount = 0;
+                ad.setVisibility(android.view.View.VISIBLE);
                 Log.d(TAG, "Banner loaded");
             }
             @Override
             public void onAdLoadFailed(InMobiBanner ad, InMobiAdRequestStatus status) {
+                // No-fill must not leave an empty banner strip above the Android navigation bar.
+                ad.setVisibility(android.view.View.GONE);
                 Log.w(TAG, "Banner failed: " + status.getMessage());
                 scheduleBannerRetry();
             }
@@ -117,6 +122,7 @@ public class MainActivity extends Activity {
         params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
         params.addRule(RelativeLayout.CENTER_HORIZONTAL);
         bannerAd.setId(1001);
+        bannerAd.setVisibility(android.view.View.GONE);
         rootLayout.addView(bannerAd, params);
         bannerAd.load();
     }
