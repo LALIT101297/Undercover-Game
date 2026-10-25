@@ -5,6 +5,8 @@ on:
   push:
     paths:
       - 'android/**'
+      - 'supabase/**'
+      - 'scripts/**'
       - '.github/workflows/build-apk.yml'
 
 jobs:
@@ -13,6 +15,10 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
