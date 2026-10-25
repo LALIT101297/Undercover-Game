@@ -6,18 +6,19 @@ A colorful, mobile-first party-game hub with online multiplayer and offline Pass
 ## Application layers
 
 ### 1. Shell and navigation
-- Authentication entry: email/password sign-in, email/password registration, and anonymous guest mode.
+- Entry: username-only local guest profile. No email/password screen.
+- Online-only identity: anonymous Supabase Auth is initialized only when a player enters online multiplayer.
 - Game hub: categorized game cards and a shared player identity.
 - Navigation: Home, Games, Profile, Friends, and Settings.
 - Responsive layout: one mobile-first layout that scales to tablets.
 
 ### 2. Shared platform services
-- Supabase Auth: registered accounts and anonymous guest sessions.
-- Player profile: display name, avatar, account type, created date, and preferences.
-- Rooms: room code, host, members, selected game, visibility, status, and timestamps.
-- Realtime: presence and game-state broadcasts where appropriate.
-- Edge Functions: validate room membership, host permissions, actions, and results.
-- Local storage: offline preferences and local-only match history. Never require network access for supported Pass & Play games.
+- Supabase Auth: one lazily-created browser client; anonymous sign-in occurs only when online multiplayer is selected. No auth request is part of local game startup.
+- Player identity: a local display name stored in party_games_player_name_v1; the same name is copied into the online room field and capped at the database limit of 16 characters.
+- Rooms: room code, host, members, status, JSON state, and expiry.
+- Online transport: the current Undercover game polls its Edge Function for room state; Realtime subscriptions are not currently implemented.
+- Edge Functions: validate user identity, room membership, host permissions, actions, and results. The host receives only their own private role during an active round.
+- Local storage: player name and local game progress. Supported Pass & Play games must not require network access.
 
 ### 3. Game module contract
 Each game is an isolated module and owns its rules, setup, round state, rendering, and scoring. Modules use shared services rather than duplicating authentication or room logic.
@@ -96,15 +97,22 @@ Reuse the existing Undercover tables and Edge Function until their responsibilit
 - player_achievements
 Use UUID primary keys, foreign keys to auth.users, timestamps, constrained status values, indexes on room codes and membership lookups, and row-level security. Never expose service-role credentials in the app.
 
+## Current implementation notes
+- game.html owns the Undercover engine and lazily creates the only Supabase client when online mode is used.
+- app-hub.js owns the username-only local hub and must not create Supabase clients or sign users in.
+- Android builds package a pinned Supabase UMD bundle and Tailwind-generated CSS into app assets; the installed app must not fetch runtime scripts, fonts, or styles from a CDN.
+- The room Edge Function uses updated_at compare-and-set writes to reject stale concurrent mutations.
+- Database migration files must use the exact version identifiers already recorded in the linked Supabase project.
+
 ## Delivery phases
-1. Foundation (current): colorful hub, email sign-in/sign-up, guest entry, shared navigation, app label, and existing Undercover integration.
+1. Foundation (current): colorful hub, username-only local entry, offline-first startup, shared navigation, packaged WebView dependencies, and existing Undercover integration.
 2. Shared platform: durable profile editing, friends, generalized rooms, presence, reconnect handling, and shared leaderboard/stat contracts.
 3. Game modules: preserve and regression-test Undercover first; then Mafia/Werewolf and Spyfall; then Pictionary and other party/guessing modules; then Bollywood Music Quiz, Bollywood Dialogue Challenge, 20 Questions, Stop, and Who Am I?; then casual competitive games. Ship each module only after its online/offline modes and multi-device behavior are tested.
 4. Progression: achievements, levels, match history, game-specific leaderboards, and moderation/reporting.
 5. Hardening: offline/online regression, multi-device testing, reconnect and race-condition tests, privacy/RLS review, and release builds.
 
 ## Non-negotiable constraints
-- Preserve the existing Undercover gameplay, Supabase project, Edge Function behavior, and InMobi SDK/ad hooks unless a specific migration is reviewed.
+- Preserve the existing Undercover gameplay, Supabase project and data, Edge Function contract, and InMobi SDK/ad hooks. Any backend schema change must have a reviewed, version-aligned migration.
 - Keep all changes inside LALIT101297/Undercover-Game; do not modify Apna Social.
 - Prefer free-tier services. Verify pricing before enabling anything that could incur a charge.
 - Do not claim multiplayer or cross-device behavior is tested until tested on multiple physical devices.
