@@ -4,11 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Undercover Imposter</title>
-  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="tailwind.min.css">
+  <script src="supabase.min.js"></script>
   <style>
     body { font-family: 'Inter', sans-serif; padding-bottom: 68px; }
     .timer-progress { transition: width 1s linear; }
@@ -1164,6 +1161,7 @@
     tabOnlineMode.addEventListener("click", () => {
       Sound.click();
       activeGameMode = "online";
+      onlineNameInput.value = localStorage.getItem("party_games_player_name_v1") || onlineNameInput.value || "";
       tabOnlineMode.className = "py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm bg-indigo-600 text-white shadow transition flex items-center justify-center gap-1.5";
       tabOfflineMode.className = "py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm text-slate-400 hover:text-white transition flex items-center justify-center gap-1.5";
       showScreen(screenOnlineMenu);
@@ -1181,9 +1179,19 @@
     let onlineAuthSession = null;
     const SUPABASE_URL = "https://bzrostyxnljehnxfdene.supabase.co";
     const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_4oRADljIbDPFQsQwQMEB4w_LMrppdLQ";
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
-    });
+    let supabaseClient = null;
+    function getOnlineSupabaseClient() {
+      if (!supabaseClient) {
+        if (!window.supabase || typeof window.supabase.createClient !== "function") {
+          throw new Error("Online services could not load. Offline games are still available.");
+        }
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+          auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
+        });
+      }
+      return supabaseClient;
+    }
+    let onlineAuthPromise = null;
     let onlineRoomState = { status:"lobby", categoryName:"Desi Special", imposterCount:1, majorityWord:"", imposterWord:"", imposterIds:[], players:[], clues:[] };
 
     const onlineNameInput = document.getElementById("online-player-name");
@@ -1197,19 +1205,28 @@
       onlineMenuStatus.classList.remove("hidden");
     }
     async function ensureOnlineAuth() {
-      const { data: current } = await supabase.auth.getSession();
-      if (current.session) onlineAuthSession = current.session;
-      else {
-        const { data, error } = await supabase.auth.signInAnonymously();
-        if (error) throw new Error("Guest sign-in is not enabled yet. Enable Anonymous Sign-Ins in Supabase Authentication settings, then retry.");
-        onlineAuthSession = data.session;
-      }
-      myPlayerId = onlineAuthSession.user.id;
-      return onlineAuthSession;
+      if (onlineAuthSession) return onlineAuthSession;
+      if (onlineAuthPromise) return onlineAuthPromise;
+      onlineAuthPromise = (async () => {
+        const client = getOnlineSupabaseClient();
+        const { data: current, error: sessionError } = await client.auth.getSession();
+        if (sessionError) throw new Error("Could not restore your online session. Please retry.");
+        if (current.session) onlineAuthSession = current.session;
+        else {
+          const { data, error } = await client.auth.signInAnonymously();
+          if (error) throw new Error("Guest sign-in is unavailable. Check the Supabase Anonymous Sign-Ins setting and retry.");
+          onlineAuthSession = data.session;
+        }
+        myPlayerId = onlineAuthSession.user.id;
+        return onlineAuthSession;
+      })();
+      try { return await onlineAuthPromise; }
+      finally { onlineAuthPromise = null; }
     }
     async function onlineAction(action, payload = {}) {
-      const session = await ensureOnlineAuth();
-      const { data, error } = await supabase.functions.invoke("undercover-game", { body: { action, roomCode: currentRoomCode, ...payload } });
+      await ensureOnlineAuth();
+      const client = getOnlineSupabaseClient();
+      const { data, error } = await client.functions.invoke("undercover-game", { body: { action, roomCode: currentRoomCode, ...payload } });
       if (error) {
         let message = error.message || "Online request failed.";
         try { const context = await error.context.json(); if (context.error) message = context.error; } catch (_) {}
