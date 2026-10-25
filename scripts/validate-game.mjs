@@ -33,7 +33,7 @@ assert.match(html, /id="online-player-name"[^>]*maxlength="16"/);
 assert.doesNotMatch(hub, /createClient\(|client\.auth\./,
   "the hub must not initialize a second client or authenticate local play");
 assert.match(hub, /maxlength=\\"16/);
-assert.match(hub, /showHome\(savedPlayerName\)/);
+assert.match(hub, /showHome\(savedPlayerName \|\| "Guest Player"\)/,\n  "offline play must open as guest without requiring a username");\nassert.match(hub, /Offline play is available immediately/);\nassert.match(hub, /profileNameForm\.addEventListener\("submit"/,\n  "profile name must be editable later from the profile screen");\nassert.match(hub, /window\.pgHandleBack=function/);
 assert.match(edge, /if \(copy\.status === "playing"\)/);
 assert.doesNotMatch(edge, /userId !== hostId/,
   "host must receive only their own role while a round is active");
