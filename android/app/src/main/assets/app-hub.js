@@ -14,7 +14,7 @@
   document.head.appendChild(style);
   const root = document.createElement("main");
   root.id = "pg-root";
-  root.innerHTML = "\n    <section id=\"pg-auth\">\n      <header class=\"pg-auth-brand\">\n        <div class=\"pg-brand-mark\">🎲</div>\n        <p class=\"pg-kicker\">EVERYONE'S INVITED</p>\n        <h1 class=\"brand\">PARTY GAMES</h1>\n        <div class=\"pg-color-line\"><i></i><i></i><i></i><i></i></div>\n        <p class=\"pg-auth-subtitle\">Quick games. Big laughs. One phone or all your friends online.</p>\n      </header>\n      <div class=\"panel pg-auth-panel\">\n        <div class=\"mb-4\"><h2>Ready to play?</h2><p class=\"text-xs mt-1\" style=\"color:#7487a3\">Sign in or jump straight into a guest game.</p></div>\n        <div class=\"grid grid-cols-2 gap-2 mb-5\">\n          <button id=\"pg-login-tab\" class=\"primary rounded-xl py-3 font-bold\">Log in</button>\n          <button id=\"pg-signup-tab\" class=\"rounded-xl py-3 bg-slate-800 text-slate-300 font-bold\">Sign up</button>\n        </div>\n        <form id=\"pg-auth-form\" class=\"space-y-3\">\n          <label class=\"block text-xs\">Email<input id=\"pg-email\" class=\"field\" type=\"email\" autocomplete=\"email\" placeholder=\"you@example.com\" required></label>\n          <label class=\"block text-xs\">Password<input id=\"pg-password\" class=\"field\" type=\"password\" minlength=\"6\" autocomplete=\"current-password\" placeholder=\"At least 6 characters\" required></label>\n          <button id=\"pg-submit\" class=\"primary w-full rounded-xl py-3.5 font-extrabold\" type=\"submit\">Log in</button>\n        </form>\n        <p id=\"pg-auth-message\" class=\"text-xs text-center mt-3\" style=\"color:#b56b34\" aria-live=\"polite\"></p>\n        <div class=\"flex items-center gap-3 my-5\"><span class=\"h-px flex-1\" style=\"background:#dce9f3\"></span><span class=\"text-xs\" style=\"color:#91a2b7\">OR</span><span class=\"h-px flex-1\" style=\"background:#dce9f3\"></span></div>\n        <button id=\"pg-guest\" class=\"w-full rounded-xl py-3.5 font-bold\">Continue as Guest</button>\n        <p class=\"text-[10px] text-center mt-3\" style=\"color:#8292a8\">Guest progress stays with your guest session on this device.</p>\n      </div>\n    </section>\n    <section id=\"pg-home\" class=\"hidden\">\n      <header class=\"pg-home-header\">\n        <div class=\"pg-home-brand\"><span class=\"pg-home-brand-mark\">🎲</span><span class=\"pg-home-brand-name\">PARTY GAMES</span></div>\n        <p class=\"pg-home-eyebrow\">YOUR GAME NIGHT STARTS HERE</p>\n        <h1 class=\"pg-home-title\">Pick a game.<br>Make some noise!</h1>\n        <p id=\"pg-welcome\" class=\"text-sm mt-2\">Pick a game and invite your friends.</p>\n      </header>\n      <div class=\"pg-player-strip\">\n        <span class=\"pg-avatar\">🎮</span>\n        <span class=\"pg-player-meta\"><small>YOUR PLAYER CARD</small><strong id=\"pg-player\">Guest Player</strong><span id=\"pg-account-type\">Guest session</span></span>\n        <span class=\"pg-player-burst\">⭐</span>\n      </div>\n      <div class=\"pg-library-heading\"><div><p>THE GAME LIBRARY</p><h2>What are we playing?</h2></div><span class=\"pill\">Play & laugh</span></div>\n      <button id=\"pg-undercover\" class=\"tile pg-featured-game\">\n        <span class=\"pg-featured-art\">🕵️</span>\n        <span class=\"pg-featured-copy\"><span class=\"pill\">ONLINE + OFFLINE</span><h3>Undercover Imposter</h3><p>Find the imposter · Bluff, clue and vote with your crew.</p></span>\n      </button>\n      <div class=\"grid grid-cols-2 gap-3 pg-game-grid\">\n        <div class=\"tile\"><div class=\"flex justify-between\"><span class=\"text-3xl\">🐺</span><span class=\"pill\">Coming soon</span></div><div><h3 class=\"font-extrabold\">Mafia / Werewolf</h3><p class=\"text-[11px] text-slate-400\">Trust no one.</p></div></div>\n        <div class=\"tile\"><div class=\"flex justify-between\"><span class=\"text-3xl\">🗺️</span><span class=\"pill\">Coming soon</span></div><div><h3 class=\"font-extrabold\">Spyfall</h3><p class=\"text-[11px] text-slate-400\">Find the spy.</p></div></div>\n      </div>\n      <nav class=\"nav\">\n        <button id=\"pg-home-nav\"><span>🏠</span><small class=\"pg-bottom-label\">HOME</small></button>\n        <button id=\"pg-games-nav\"><span>🎲</span><small class=\"pg-bottom-label\">GAMES</small></button>\n        <button id=\"pg-profile-nav\"><span>🏆</span><small class=\"pg-bottom-label\">PROFILE</small></button>\n        <button id=\"pg-signout\"><span>↪️</span><small class=\"pg-bottom-label\">SIGN OUT</small></button>\n      </nav>\n      <p id=\"pg-home-message\" class=\"text-center text-[10px] mt-3\"></p>\n    </section>\n    <section id=\"pg-profile-view\" class=\"hidden\">\n      <div class=\"hub-topbar\"><button id=\"pg-profile-back\">← Back to Home</button></div>\n      <div class=\"panel\"><p class=\"text-xs uppercase tracking-widest font-bold\" style=\"color:#5590a8\">PLAYER PROFILE</p><h2 id=\"pg-profile-title\" class=\"text-2xl font-black mt-1\">Your Profile</h2><p class=\"text-xs mt-1 mb-4\" style=\"color:#71839d\">Your wins, match history and game-night stats</p><div id=\"pg-profile-stats\"></div></div>\n    </section>\n";
+  root.innerHTML = "\n    <section id=\"pg-auth\">\n      <header class=\"pg-auth-brand\"><div class=\"pg-brand-mark\">🎲</div><p class=\"pg-kicker\">EVERYONE'S INVITED</p><h1 class=\"brand\">PARTY GAMES</h1><div class=\"pg-color-line\"><i></i><i></i><i></i><i></i></div><p class=\"pg-auth-subtitle\">Quick games. Big laughs. One phone or all your friends online.</p></header>\n      <div class=\"panel pg-auth-panel\">\n        <div class=\"mb-4\"><h2>What should we call you?</h2><p class=\"text-xs mt-1\" style=\"color:#7487a3\">Choose a player name and jump straight into the fun.</p></div>\n        <form id=\"pg-name-form\" class=\"space-y-3\"><label class=\"block text-xs\">YOUR PLAYER NAME<input id=\"pg-username\" class=\"field\" type=\"text\" maxlength=\"18\" autocomplete=\"nickname\" placeholder=\"e.g. Lalit\" required></label><button id=\"pg-start\" class=\"primary w-full rounded-xl py-3.5 font-extrabold\" type=\"submit\">LET'S PLAY 🎉</button></form>\n        <p id=\"pg-auth-message\" class=\"text-xs text-center mt-3\" style=\"color:#b56b34\" aria-live=\"polite\"></p><p class=\"text-[10px] text-center mt-4\" style=\"color:#8292a8\">No account. No password. Your name is saved on this device.</p>\n      </div>\n    </section>\n    <section id=\"pg-home\" class=\"hidden\">\n      <header class=\"pg-home-header\">\n        <div class=\"pg-home-brand\"><span class=\"pg-home-brand-mark\">🎲</span><span class=\"pg-home-brand-name\">PARTY GAMES</span></div>\n        <p class=\"pg-home-eyebrow\">YOUR GAME NIGHT STARTS HERE</p>\n        <h1 class=\"pg-home-title\">Pick a game.<br>Make some noise!</h1>\n        <p id=\"pg-welcome\" class=\"text-sm mt-2\">Pick a game and invite your friends.</p>\n      </header>\n      <div class=\"pg-player-strip\">\n        <span class=\"pg-avatar\">🎮</span>\n        <span class=\"pg-player-meta\"><small>YOUR PLAYER CARD</small><strong id=\"pg-player\">Guest Player</strong><span id=\"pg-account-type\">Guest session</span></span>\n        <span class=\"pg-player-burst\">⭐</span>\n      </div>\n      <div class=\"pg-library-heading\"><div><p>THE GAME LIBRARY</p><h2>What are we playing?</h2></div><span class=\"pill\">Play & laugh</span></div>\n      <button id=\"pg-undercover\" class=\"tile pg-featured-game\">\n        <span class=\"pg-featured-art\">🕵️</span>\n        <span class=\"pg-featured-copy\"><span class=\"pill\">ONLINE + OFFLINE</span><h3>Undercover Imposter</h3><p>Find the imposter · Bluff, clue and vote with your crew.</p></span>\n      </button>\n      <div class=\"grid grid-cols-2 gap-3 pg-game-grid\">\n        <div class=\"tile\"><div class=\"flex justify-between\"><span class=\"text-3xl\">🐺</span><span class=\"pill\">Coming soon</span></div><div><h3 class=\"font-extrabold\">Mafia / Werewolf</h3><p class=\"text-[11px] text-slate-400\">Trust no one.</p></div></div>\n        <div class=\"tile\"><div class=\"flex justify-between\"><span class=\"text-3xl\">🗺️</span><span class=\"pill\">Coming soon</span></div><div><h3 class=\"font-extrabold\">Spyfall</h3><p class=\"text-[11px] text-slate-400\">Find the spy.</p></div></div>\n      </div>\n      <nav class=\"nav\">\n        <button id=\"pg-home-nav\"><span>🏠</span><small class=\"pg-bottom-label\">HOME</small></button>\n        <button id=\"pg-games-nav\"><span>🎲</span><small class=\"pg-bottom-label\">GAMES</small></button>\n        <button id=\"pg-profile-nav\"><span>🏆</span><small class=\"pg-bottom-label\">PROFILE</small></button>\n        <button id=\"pg-signout\"><span>✏️</span><small class=\"pg-bottom-label\">CHANGE NAME</small></button>\n      </nav>\n      <p id=\"pg-home-message\" class=\"text-center text-[10px] mt-3\"></p>\n    </section>\n    <section id=\"pg-profile-view\" class=\"hidden\">\n      <div class=\"hub-topbar\"><button id=\"pg-profile-back\">← Back to Home</button></div>\n      <div class=\"panel\"><p class=\"text-xs uppercase tracking-widest font-bold\" style=\"color:#5590a8\">PLAYER PROFILE</p><h2 id=\"pg-profile-title\" class=\"text-2xl font-black mt-1\">Your Profile</h2><p class=\"text-xs mt-1 mb-4\" style=\"color:#71839d\">Your wins, match history and game-night stats</p><div id=\"pg-profile-stats\"></div></div>\n    </section>\n";
 
   document.body.insertBefore(root, legacy);
   const legacyNav=document.createElement("div");
@@ -502,66 +502,38 @@
   document.getElementById("pg-number-card").onclick=launchNumber;
 
 
-    let mode = "login";
   let session = null;
   const authView = document.getElementById("pg-auth");
   const homeView = document.getElementById("pg-home");
   const message = document.getElementById("pg-auth-message");
-  function showHome(nextSession) {
-    session = nextSession;
-    authView.classList.add("hidden");
-    homeView.classList.remove("hidden");
-    legacy.classList.add("pg-hidden");
-    footer.classList.add("pg-hidden");
-    const user = session && session.user;
-    const label = user && user.email ? user.email.split("@")[0] : "Guest Player";
+  const PLAYER_NAME_KEY = "party_games_player_name_v1";
+  function showHome(nextSession, playerName) {
+    session = nextSession || session || null;
+    const label = (playerName || localStorage.getItem(PLAYER_NAME_KEY) || "Player").trim().slice(0,18);
+    authView.classList.add("hidden"); homeView.classList.remove("hidden");
+    legacy.classList.add("pg-hidden"); footer.classList.add("pg-hidden");
     document.getElementById("pg-player").textContent = label;
-    document.getElementById("pg-account-type").textContent = user && user.email ? "Registered account" : "Guest session";
-    document.getElementById("pg-welcome").textContent = "Welcome, " + label + "!";
+    document.getElementById("pg-account-type").textContent = "Ready to play · local profile";
+    document.getElementById("pg-welcome").textContent = "Welcome, " + label + "! Pick your game.";
   }
-  function setMode(next) {
-    mode = next;
-    const login = mode === "login";
-    document.getElementById("pg-login-tab").className = (login ? "primary " : "bg-slate-800 text-slate-300 ") + "rounded-xl py-3 font-bold";
-    document.getElementById("pg-signup-tab").className = (!login ? "primary " : "bg-slate-800 text-slate-300 ") + "rounded-xl py-3 font-bold";
-    document.getElementById("pg-submit").textContent = login ? "Log in" : "Create account";
-    document.getElementById("pg-password").autocomplete = login ? "current-password" : "new-password";
-    message.textContent = "";
-  }
-  document.getElementById("pg-login-tab").addEventListener("click", () => setMode("login"));
-  document.getElementById("pg-signup-tab").addEventListener("click", () => setMode("signup"));
-  document.getElementById("pg-auth-form").addEventListener("submit", async event => {
+  document.getElementById("pg-name-form").addEventListener("submit", async event => {
     event.preventDefault();
-    const submit = document.getElementById("pg-submit");
-    submit.disabled = true; message.textContent = "Please wait…";
-    try {
-      const email = document.getElementById("pg-email").value.trim();
-      const password = document.getElementById("pg-password").value;
-      const result = mode === "signup"
-        ? await client.auth.signUp({ email, password })
-        : await client.auth.signInWithPassword({ email, password });
-      if (result.error) throw result.error;
-      if (mode === "signup" && !result.data.session) {
-        message.textContent = "Account created. Confirm your email, then log in.";
-        return;
-      }
-      showHome(result.data.session);
-    } catch (error) { message.textContent = error.message || "Authentication failed."; }
-    finally { submit.disabled = false; }
-  });
-  document.getElementById("pg-guest").addEventListener("click", async () => {
-    message.textContent = "Starting guest session…";
+    const input = document.getElementById("pg-username");
+    const label = input.value.trim().replace(/\\s+/g," ").slice(0,18);
+    if (label.length < 2) { message.textContent = "Please enter at least 2 characters."; input.focus(); return; }
+    localStorage.setItem(PLAYER_NAME_KEY,label);
+    const start = document.getElementById("pg-start"); start.disabled = true; start.textContent = "GETTING THINGS READY…"; message.textContent = "";
     try {
       const current = await client.auth.getSession();
-      let active = current.data.session;
-      if (!active) {
-        const result = await client.auth.signInAnonymously();
-        if (result.error) throw result.error;
-        active = result.data.session;
-      }
-      showHome(active);
-    } catch (error) { message.textContent = error.message || "Guest mode unavailable."; }
+      session = current && current.data && current.data.session || null;
+      if (!session) { const result = await client.auth.signInAnonymously(); if (!result.error) session = result.data.session || null; }
+    } catch (_) { /* Local and offline play never depends on cloud authentication. */ }
+    showHome(session,label); start.disabled = false; start.textContent = "LET'S PLAY 🎉";
   });
+  const savedPlayerName = localStorage.getItem(PLAYER_NAME_KEY);
+  if (savedPlayerName) document.getElementById("pg-username").value = savedPlayerName;
+  client.auth.getSession().then(({data}) => { session = data && data.session || null; if (savedPlayerName) showHome(session,savedPlayerName); })
+    .catch(() => { if (savedPlayerName) showHome(null,savedPlayerName); });
   document.getElementById("pg-undercover").addEventListener("click", () => {
     homeView.classList.add("hidden"); legacy.classList.remove("pg-hidden"); footer.classList.remove("pg-hidden");
     window.scrollTo({top:0,behavior:"smooth"});
@@ -582,12 +554,11 @@
   });
   document.getElementById("pg-profile-back").addEventListener("click",()=>{profileView.classList.add("hidden");homeView.classList.remove("hidden");window.scrollTo({top:0,behavior:"smooth"});});
   document.getElementById("pg-return-home").addEventListener("click",()=>window.pgHandleBack());
-  document.getElementById("pg-signout").addEventListener("click", async () => {
-    await client.auth.signOut();
-    session = null; homeView.classList.add("hidden"); authView.classList.remove("hidden");
+  document.getElementById("pg-signout").addEventListener("click", () => {
+    homeView.classList.add("hidden"); profileView.classList.add("hidden"); authView.classList.remove("hidden");
     legacy.classList.add("pg-hidden"); footer.classList.add("pg-hidden");
-    document.getElementById("pg-email").value = ""; document.getElementById("pg-password").value = "";
-    setMode("login");
+    const input = document.getElementById("pg-username"); input.value = localStorage.getItem(PLAYER_NAME_KEY) || "";
+    input.focus(); window.scrollTo({top:0,behavior:"smooth"});
   });
   window.pgHandleBack=function(){
     if(!profileView.classList.contains("hidden")){profileView.classList.add("hidden");homeView.classList.remove("hidden");window.scrollTo(0,0);return true;}
