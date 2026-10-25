@@ -35,7 +35,7 @@ begin
     return false;
   end if;
 
-  insert into public.game_player_profiles (
+  insert into public.game_player_profiles as existing_profile (
     user_id, display_name, rounds_played, wins,
     imposter_wins, citizen_wins, updated_at
   ) values (
@@ -48,10 +48,10 @@ begin
     now()
   )
   on conflict (user_id) do update set
-    rounds_played = public.game_player_profiles.rounds_played + 1,
-    wins = public.game_player_profiles.wins + case when excluded.wins > 0 then 1 else 0 end,
-    imposter_wins = public.game_player_profiles.imposter_wins + excluded.imposter_wins,
-    citizen_wins = public.game_player_profiles.citizen_wins + excluded.citizen_wins,
+    rounds_played = existing_profile.rounds_played + 1,
+    wins = existing_profile.wins + excluded.wins,
+    imposter_wins = existing_profile.imposter_wins + excluded.imposter_wins,
+    citizen_wins = existing_profile.citizen_wins + excluded.citizen_wins,
     updated_at = now();
 
   return true;
