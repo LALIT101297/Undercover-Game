@@ -49,6 +49,7 @@ async function saveRoom(room: any, state: any, status = state.status) {
     .maybeSingle();
   if (error) throw error;
   if (!data) throw new Error("This room changed on another device. Refresh and try again.");
+  return data;
 }
 async function finishRound(room: any, state: any) {
   const counts: Record<string, number> = {};
@@ -161,14 +162,27 @@ Deno.serve(async (req: Request) => {
     if (action === "state") return reply({ roomCode: code, state: publicState(state, user.id, room.host_id), isHost: user.id === room.host_id });
     if (action === "leave") {
       if (room.status === "lobby") {
-        await admin.from("game_room_members").delete().eq("room_id", room.id).eq("user_id", user.id);
+        const leavingPlayer = state.players.find((p: any) => p.id === user.id);
         const nextPlayers = state.players.filter((p: any) => p.id !== user.id);
         if (user.id === room.host_id || nextPlayers.length === 0) {
-          await admin.from("game_rooms").delete().eq("id", room.id);
+          const { data: deletedRoom, error: deleteError } = await admin.from("game_rooms")
+            .delete().eq("id", room.id).eq("updated_at", room.updated_at).select("id").maybeSingle();
+          if (deleteError) throw deleteError;
+          if (!deletedRoom) throw new Error("This room changed on another device. Refresh and try again.");
           return reply({ left: true, closed: true });
         }
         state.players = nextPlayers;
-        await saveRoom(room, state, "lobby");
+        const savedRoom = await saveRoom(room, state, "lobby");
+        const { error: memberDeleteError } = await admin.from("game_room_members")
+          .delete().eq("room_id", room.id).eq("user_id", user.id);
+        if (memberDeleteError) {
+          // Restore the player if membership removal failed after the room update.
+          if (leavingPlayer) {
+            const restoredState = { ...state, players: [...state.players, leavingPlayer] };
+            await saveRoom({ id: room.id, updated_at: savedRoom.updated_at }, restoredState, "lobby");
+          }
+          throw memberDeleteError;
+        }
       } else {
         // Keep membership during an active/result round so the same guest can reconnect.
       }
