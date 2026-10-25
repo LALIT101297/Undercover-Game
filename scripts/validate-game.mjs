@@ -7,6 +7,7 @@ const read = (path) => fs.readFileSync(new URL(path, root), "utf8");
 const html = read("android/app/src/main/assets/game.html");
 const hub = read("android/app/src/main/assets/app-hub.js");
 const edge = read("supabase/functions/undercover-game/index.ts");
+const atomicStatsMigration = read("supabase/migrations/20261025004406_atomic_round_stats.sql");
 
 const inlineScripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)]
   .map((match) => match[1])
@@ -38,5 +39,9 @@ assert.doesNotMatch(edge, /userId !== hostId/,
   "host must receive only their own role while a round is active");
 assert.match(edge, /\.eq\("updated_at", room\.updated_at\)/,
   "room mutations must use optimistic concurrency");
+assert.match(edge, /admin\.rpc\("record_game_round_result"/,
+  "round results and profile counters must be written atomically");
+assert.match(atomicStatsMigration, /security invoker/i);
+assert.match(atomicStatsMigration, /grant execute[\s\S]*to service_role/i);
 
 console.log("Game validation passed: syntax, offline runtime assets, local guest flow, single online auth client, and protected room state.");
