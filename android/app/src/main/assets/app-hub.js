@@ -36,6 +36,12 @@
   const nameForm = document.getElementById("pg-name-form");
   const nameInput = document.getElementById("pg-username");
   const startButton = document.getElementById("pg-start");
+  document.getElementById("pg-undercover").addEventListener("click", () => {
+    homeView.classList.add("hidden");
+    legacy.classList.remove("pg-hidden");
+    footer.classList.remove("pg-hidden");
+    window.scrollTo({top:0,behavior:"smooth"});
+  });
   window.__partyHubReady = true;
   function startWithPlayerName(event) {
     if (event) event.preventDefault();
@@ -550,10 +556,6 @@
   document.getElementById("pg-number-card").onclick=launchNumber;
 
 
-  document.getElementById("pg-undercover").addEventListener("click", () => {
-    homeView.classList.add("hidden"); legacy.classList.remove("pg-hidden"); footer.classList.remove("pg-hidden");
-    window.scrollTo({top:0,behavior:"smooth"});
-  });
   document.getElementById("pg-games-nav").addEventListener("click",()=>{const grid=document.querySelector("#pg-home .pg-game-grid");if(grid)grid.scrollIntoView({behavior:"smooth",block:"start"});});
   document.getElementById("pg-home-nav").addEventListener("click", () => {
     legacy.classList.add("pg-hidden"); footer.classList.add("pg-hidden"); homeView.classList.remove("hidden");
