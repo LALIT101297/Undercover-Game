@@ -52,8 +52,30 @@ public class MainActivity extends Activity {
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setMediaPlaybackRequiresUserGesture(false);
-        webView.setWebViewClient(new WebViewClient());
-        webView.setWebChromeClient(new WebChromeClient());
+        webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                Log.d(TAG, "Game UI loaded: " + url);
+            }
+
+            @Override
+            public void onReceivedError(WebView view, android.webkit.WebResourceRequest request,
+                                        android.webkit.WebResourceError error) {
+                super.onReceivedError(view, request, error);
+                if (request.isForMainFrame()) {
+                    Log.e(TAG, "Game UI load failed: " + error.getDescription());
+                }
+            }
+        });
+        webView.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public boolean onConsoleMessage(android.webkit.ConsoleMessage message) {
+                Log.e(TAG, "WebView " + message.messageLevel() + ": "
+                        + message.message() + " at " + message.sourceId() + ":" + message.lineNumber());
+                return true;
+            }
+        });
         webView.addJavascriptInterface(new AdsBridge(), "AndroidAds");
 
         RelativeLayout.LayoutParams webParams = new RelativeLayout.LayoutParams(
@@ -304,14 +326,21 @@ public class MainActivity extends Activity {
         super.onDestroy();
     }
 
+    private boolean backRequestPending = false;
+
     @Override
     public void onBackPressed() {
-        if (webView != null) {
-            webView.evaluateJavascript("window.pgHandleBack ? window.pgHandleBack() : false", value -> {
-                if (!"true".equals(value)) MainActivity.super.onBackPressed();
-            });
-        } else {
-            super.onBackPressed();
+        if (webView == null || backRequestPending) {
+            if (webView == null) super.onBackPressed();
+            return;
         }
+        backRequestPending = true;
+        webView.evaluateJavascript(
+                "(function(){try{return !!(window.pgHandleBack && window.pgHandleBack());}"
+                        + "catch(e){console.error('Back navigation failed',e);return false;}})()",
+                value -> {
+                    backRequestPending = false;
+                    if (!"true".equals(value)) MainActivity.super.onBackPressed();
+                });
     }
 }
