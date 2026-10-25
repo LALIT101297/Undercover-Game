@@ -69,27 +69,15 @@ async function finishRound(room: any, state: any) {
   for (const p of state.players) {
     const isImposter = (state.imposterIds || []).includes(p.id);
     const won = isImposter ? !caught : caught;
-    const { error: resultError } = await admin.from("game_round_results").insert({
-      round_id: state.roundId, user_id: p.id, room_code: room.room_code,
-      player_name: p.name, role: isImposter ? "imposter" : "citizen", won
+    const { error: resultError } = await admin.rpc("record_game_round_result", {
+      p_round_id: state.roundId,
+      p_user_id: p.id,
+      p_room_code: room.room_code,
+      p_player_name: p.name,
+      p_role: isImposter ? "imposter" : "citizen",
+      p_won: won
     });
-    if (resultError) {
-      if (resultError.code === "23505") continue;
-      console.error("Could not persist round result", resultError);
-      continue;
-    }
-    const { data: profile } = await admin.from("game_player_profiles")
-      .select("display_name,rounds_played,wins,imposter_wins,citizen_wins")
-      .eq("user_id", p.id).maybeSingle();
-    const { error: profileError } = await admin.from("game_player_profiles").upsert({
-      user_id: p.id, display_name: clean(profile?.display_name || p.name, 16) || "Player",
-      rounds_played: (profile?.rounds_played || 0) + 1,
-      wins: (profile?.wins || 0) + (won ? 1 : 0),
-      imposter_wins: (profile?.imposter_wins || 0) + (isImposter && won ? 1 : 0),
-      citizen_wins: (profile?.citizen_wins || 0) + (!isImposter && won ? 1 : 0),
-      updated_at: new Date().toISOString()
-    }, { onConflict: "user_id" });
-    if (profileError) console.error("Could not update player profile", profileError);
+    if (resultError) console.error("Could not persist round result and profile atomically", resultError);
   }
   return state;
 }
