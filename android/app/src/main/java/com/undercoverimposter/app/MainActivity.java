@@ -90,10 +90,13 @@ public class MainActivity extends Activity {
             @Override
             public void onAdLoadSucceeded(InMobiBanner ad, AdMetaInfo info) {
                 bannerRetryCount = 0;
+                ad.setVisibility(android.view.View.VISIBLE);
                 Log.d(TAG, "Banner loaded");
             }
             @Override
             public void onAdLoadFailed(InMobiBanner ad, InMobiAdRequestStatus status) {
+                // No-fill must not leave an empty banner strip above the Android navigation bar.
+                ad.setVisibility(android.view.View.GONE);
                 Log.w(TAG, "Banner failed: " + status.getMessage());
                 scheduleBannerRetry();
             }
@@ -117,6 +120,7 @@ public class MainActivity extends Activity {
         params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
         params.addRule(RelativeLayout.CENTER_HORIZONTAL);
         bannerAd.setId(1001);
+        bannerAd.setVisibility(android.view.View.GONE);
         rootLayout.addView(bannerAd, params);
         bannerAd.load();
     }
