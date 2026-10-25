@@ -102,6 +102,7 @@ Use UUID primary keys, foreign keys to auth.users, timestamps, constrained statu
 - app-hub.js owns the username-only local hub and must not create Supabase clients or sign users in.
 - Android builds package a pinned Supabase UMD bundle and Tailwind-generated CSS into app assets; the installed app must not fetch runtime scripts, fonts, or styles from a CDN.
 - The room Edge Function uses updated_at compare-and-set writes to reject stale concurrent mutations.
+- Online round results and player profile counters are written in one restricted server-side database transaction.
 - Database migration files must use the exact version identifiers already recorded in the linked Supabase project.
 
 ## Delivery phases
