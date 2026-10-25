@@ -86,6 +86,8 @@ public class MainActivity extends Activity {
     private void loadBanner() {
         if (isFinishing() || isDestroyed() || bannerAd != null) return;
         bannerAd = new InMobiBanner(this, BANNER_PLACEMENT_ID);
+        // Keep a dark surface when the banner loads; collapse it entirely on no-fill.
+        bannerAd.setBackgroundColor(android.graphics.Color.rgb(8, 13, 27));
         bannerAd.setListener(new BannerAdEventListener() {
             @Override
             public void onAdLoadSucceeded(InMobiBanner ad, AdMetaInfo info) {
