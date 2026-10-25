@@ -9,7 +9,9 @@
   document.head.appendChild(style);
   const gameplayTheme = document.createElement("style");
   gameplayTheme.textContent = `
+    #legacy-game-shell{width:100%;max-width:620px;margin:0 auto;padding:0 12px 28px;box-sizing:border-box;}
     #legacy-game-shell section:not(.hidden){
+      width:100%;max-width:100%;margin-left:auto!important;margin-right:auto!important;box-sizing:border-box;overflow-wrap:anywhere;
       background:#fff!important;color:#20325f!important;border:2px solid #fff!important;
       border-radius:23px!important;box-shadow:0 5px 0 #c6daec,0 12px 26px rgba(51,91,132,.09)!important
     }
@@ -90,10 +92,9 @@
   nameForm.addEventListener("submit", startWithPlayerName);
   startButton.addEventListener("click", startWithPlayerName);
   const savedPlayerName = localStorage.getItem(PLAYER_NAME_KEY);
-  if (savedPlayerName) {
-    document.getElementById("pg-username").value = savedPlayerName;
-    showHome(savedPlayerName);
-  }
+  // Offline play is available immediately; a profile name is optional.
+  document.getElementById("pg-username").value = savedPlayerName || "";
+  showHome(savedPlayerName || "Guest Player");
 
 
   const legacyNav=document.createElement("div");
@@ -318,7 +319,8 @@
   document.getElementById("pg-quiz-next").addEventListener("click",quizNext);
   document.getElementById("pg-quiz-again").addEventListener("click",quizStart);
   function openMiniGame(id){
-    homeView.classList.add("hidden");
+    ["pg-ttt","pg-rps-game","pg-quiz-game","pg-simple-game","pg-snl-game","pg-ludo-game"].forEach(other=>{const el=document.getElementById(other);if(el)el.classList.add("hidden");});
+    profileView.classList.add("hidden");homeView.classList.add("hidden");
     document.getElementById(id).classList.remove("hidden");
     window.scrollTo({top:0,behavior:"smooth"});
   }
@@ -387,7 +389,7 @@
       gameGrid.appendChild(b);
     });
   }
-  const extraBack=()=>{["pg-simple-game","pg-snl-game","pg-ludo-game"].forEach(id=>document.getElementById(id).classList.add("hidden"));homeView.classList.remove("hidden");window.scrollTo(0,0);};
+  const extraBack=()=>{["pg-ttt","pg-rps-game","pg-quiz-game","pg-simple-game","pg-snl-game","pg-ludo-game"].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add("hidden");});profileView.classList.add("hidden");legacy.classList.add("pg-hidden");footer.classList.add("pg-hidden");homeView.classList.remove("hidden");window.scrollTo(0,0);};
   document.getElementById("pg-simple-back").addEventListener("click",extraBack);
   document.querySelectorAll(".pg-extra-back").forEach(b=>b.addEventListener("click",extraBack));
   function showSimple(title,description,setupHTML){
@@ -581,7 +583,7 @@
   document.getElementById("pg-number-card").onclick=launchNumber;
 
 
-  document.getElementById("pg-games-nav").addEventListener("click",()=>{const grid=document.querySelector("#pg-home .pg-game-grid");if(grid)grid.scrollIntoView({behavior:"smooth",block:"start"});});
+  document.getElementById("pg-games-nav").addEventListener("click",()=>{homeView.classList.remove("hidden");profileView.classList.add("hidden");legacy.classList.add("pg-hidden");footer.classList.add("pg-hidden");const grid=document.querySelector("#pg-home .pg-game-grid");if(grid)grid.scrollIntoView({behavior:"smooth",block:"start"});});
   document.getElementById("pg-home-nav").addEventListener("click", () => {
     legacy.classList.add("pg-hidden"); footer.classList.add("pg-hidden"); homeView.classList.remove("hidden");
     window.scrollTo({top:0,behavior:"smooth"});
@@ -589,8 +591,14 @@
   const profileView=document.getElementById("pg-profile-view");
   const profileStats=document.getElementById("stats-panel");
   if(profileStats) document.getElementById("pg-profile-stats").appendChild(profileStats);
+  const profileNameForm=document.createElement("form");
+  profileNameForm.className="panel mb-4";
+  profileNameForm.innerHTML="<label class=\"block text-xs font-bold\">PLAYER NAME<input id=\"pg-profile-name\" class=\"field\" maxlength=\"16\" placeholder=\"Optional name for your profile\"></label><button class=\"primary w-full rounded-xl py-3 mt-3 font-bold\" type=\"submit\">Save profile name</button>";
+  profileView.querySelector(".panel").insertBefore(profileNameForm,document.getElementById("pg-profile-stats"));
+  profileNameForm.addEventListener("submit",event=>{event.preventDefault();const value=document.getElementById("pg-profile-name").value.trim().replace(/\\s+/g," ").slice(0,16);if(value){localStorage.setItem(PLAYER_NAME_KEY,value);document.getElementById("pg-player").textContent=value;document.getElementById("pg-welcome").textContent="Welcome, "+value+"! Pick your game.";document.getElementById("pg-profile-title").textContent=value+"’s Profile";}else{localStorage.removeItem(PLAYER_NAME_KEY);document.getElementById("pg-player").textContent="Guest Player";document.getElementById("pg-welcome").textContent="Pick a game and invite your friends.";document.getElementById("pg-profile-title").textContent="Your Profile";}});
   document.getElementById("pg-profile-nav").addEventListener("click", () => {
     homeView.classList.add("hidden"); profileView.classList.remove("hidden");
+    document.getElementById("pg-profile-name").value=localStorage.getItem(PLAYER_NAME_KEY)||"";
     document.getElementById("pg-profile-title").textContent=document.getElementById("pg-player").textContent+"’s Profile";
     if(profileStats) profileStats.classList.remove("hidden");
     window.scrollTo({top:0,behavior:"smooth"});
@@ -598,17 +606,17 @@
   document.getElementById("pg-profile-back").addEventListener("click",()=>{profileView.classList.add("hidden");homeView.classList.remove("hidden");window.scrollTo({top:0,behavior:"smooth"});});
   document.getElementById("pg-return-home").addEventListener("click",()=>window.pgHandleBack());
   document.getElementById("pg-signout").addEventListener("click", () => {
-    homeView.classList.add("hidden"); profileView.classList.add("hidden"); authView.classList.remove("hidden");
-    legacy.classList.add("pg-hidden"); footer.classList.add("pg-hidden");
-    const input = document.getElementById("pg-username"); input.value = localStorage.getItem(PLAYER_NAME_KEY) || "";
-    input.focus(); window.scrollTo({top:0,behavior:"smooth"});
+    homeView.classList.add("hidden"); profileView.classList.remove("hidden");
+    document.getElementById("pg-profile-name").value=localStorage.getItem(PLAYER_NAME_KEY)||"";
+    document.getElementById("pg-profile-title").textContent="Edit your player name";
+    window.scrollTo({top:0,behavior:"smooth"});
   });
   window.pgHandleBack=function(){
     if(!profileView.classList.contains("hidden")){profileView.classList.add("hidden");homeView.classList.remove("hidden");window.scrollTo(0,0);return true;}
-    if(!homeView.classList.contains("hidden"))return false;
-    if(!legacy.classList.contains("pg-hidden")){legacy.classList.add("pg-hidden");footer.classList.add("pg-hidden");homeView.classList.remove("hidden");profileView.classList.add("hidden");window.scrollTo(0,0);return true;}
     const visibleMini=["pg-ttt","pg-rps-game","pg-quiz-game","pg-simple-game","pg-snl-game","pg-ludo-game"].find(id=>{const el=document.getElementById(id);return el&&!el.classList.contains("hidden");});
-    if(visibleMini){document.getElementById(visibleMini).classList.add("hidden");homeView.classList.remove("hidden");window.scrollTo(0,0);return true;}
-    return false;
+    if(visibleMini){extraBack();return true;}
+    if(!legacy.classList.contains("pg-hidden")){legacy.classList.add("pg-hidden");footer.classList.add("pg-hidden");homeView.classList.remove("hidden");profileView.classList.add("hidden");window.scrollTo(0,0);return true;}
+    if(!homeView.classList.contains("hidden"))return false;
+    homeView.classList.remove("hidden");window.scrollTo(0,0);return true;
   };
 })();
