@@ -38,6 +38,8 @@ assert.ok(hub.includes("Offline play is available immediately"));
 assert.ok(hub.includes('profileNameForm.addEventListener("submit"'),
   "profile name must be editable later from the profile screen");
 assert.ok(hub.includes("window.pgHandleBack=function"));
+assert.ok(hub.includes('$id("pg-ludo-track").innerHTML=""'));
+assert.doesNotMatch(hub, /\$id\("ludo-track"\)/, "Ludo must render into the actual pg-ludo-track element");
 assert.ok(edge.includes('if (copy.status === "playing")'));
 assert.doesNotMatch(edge, /userId !== hostId/,
   "host must receive only their own role while a round is active");
