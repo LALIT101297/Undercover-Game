@@ -318,16 +318,32 @@
   }
   document.getElementById("pg-quiz-next").addEventListener("click",quizNext);
   document.getElementById("pg-quiz-again").addEventListener("click",quizStart);
+  const GAME_SCREEN_IDS=["pg-ttt","pg-rps-game","pg-quiz-game","pg-simple-game","pg-snl-game","pg-ludo-game"];
+  function hideAllGameScreens(){
+    GAME_SCREEN_IDS.forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add("hidden");});
+    legacy.classList.add("pg-hidden");
+    footer.classList.add("pg-hidden");
+  }
+  function returnToGameHome(){
+    hideAllGameScreens();
+    profileView.classList.add("hidden");
+    authView.classList.add("hidden");
+    homeView.classList.remove("hidden");
+    window.scrollTo({top:0,behavior:"smooth"});
+  }
   function openMiniGame(id){
-    ["pg-ttt","pg-rps-game","pg-quiz-game","pg-simple-game","pg-snl-game","pg-ludo-game"].forEach(other=>{const el=document.getElementById(other);if(el)el.classList.add("hidden");});
-    profileView.classList.add("hidden");homeView.classList.add("hidden");
-    document.getElementById(id).classList.remove("hidden");
+    const target=document.getElementById(id);
+    if(!target)return;
+    hideAllGameScreens();
+    profileView.classList.add("hidden");
+    homeView.classList.add("hidden");
+    target.classList.remove("hidden");
     window.scrollTo({top:0,behavior:"smooth"});
   }
   function closeMiniGame(id){
-    document.getElementById(id).classList.add("hidden");
-    homeView.classList.remove("hidden");
-    window.scrollTo({top:0,behavior:"smooth"});
+    const target=document.getElementById(id);
+    if(target)target.classList.add("hidden");
+    returnToGameHome();
   }
   document.getElementById("pg-rps-card").addEventListener("click",()=>{openMiniGame("pg-rps-game");rpsReset();});
   document.getElementById("pg-quiz-card").addEventListener("click",()=>{openMiniGame("pg-quiz-game");quizStart();});
@@ -389,7 +405,7 @@
       gameGrid.appendChild(b);
     });
   }
-  const extraBack=()=>{["pg-ttt","pg-rps-game","pg-quiz-game","pg-simple-game","pg-snl-game","pg-ludo-game"].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add("hidden");});profileView.classList.add("hidden");legacy.classList.add("pg-hidden");footer.classList.add("pg-hidden");homeView.classList.remove("hidden");window.scrollTo(0,0);};
+  const extraBack=returnToGameHome;
   document.getElementById("pg-simple-back").addEventListener("click",extraBack);
   document.querySelectorAll(".pg-extra-back").forEach(b=>b.addEventListener("click",extraBack));
   function showSimple(title,description,setupHTML){
@@ -612,11 +628,10 @@
     window.scrollTo({top:0,behavior:"smooth"});
   });
   window.pgHandleBack=function(){
-    if(!profileView.classList.contains("hidden")){profileView.classList.add("hidden");homeView.classList.remove("hidden");window.scrollTo(0,0);return true;}
-    const visibleMini=["pg-ttt","pg-rps-game","pg-quiz-game","pg-simple-game","pg-snl-game","pg-ludo-game"].find(id=>{const el=document.getElementById(id);return el&&!el.classList.contains("hidden");});
-    if(visibleMini){extraBack();return true;}
-    if(!legacy.classList.contains("pg-hidden")){legacy.classList.add("pg-hidden");footer.classList.add("pg-hidden");homeView.classList.remove("hidden");profileView.classList.add("hidden");window.scrollTo(0,0);return true;}
+    if(!profileView.classList.contains("hidden")){returnToGameHome();return true;}
+    const activeGame=GAME_SCREEN_IDS.some(id=>{const el=document.getElementById(id);return el&&!el.classList.contains("hidden");});
+    if(activeGame||!legacy.classList.contains("pg-hidden")){returnToGameHome();return true;}
     if(!homeView.classList.contains("hidden"))return false;
-    homeView.classList.remove("hidden");window.scrollTo(0,0);return true;
+    returnToGameHome();return true;
   };
 })();
