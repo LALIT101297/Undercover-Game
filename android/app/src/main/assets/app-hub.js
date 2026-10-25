@@ -522,13 +522,23 @@
     const label = input.value.trim().replace(/\\s+/g," ").slice(0,18);
     if (label.length < 2) { message.textContent = "Please enter at least 2 characters."; input.focus(); return; }
     localStorage.setItem(PLAYER_NAME_KEY,label);
-    const start = document.getElementById("pg-start"); start.disabled = true; start.textContent = "GETTING THINGS READY…"; message.textContent = "";
-    try {
-      const current = await client.auth.getSession();
-      session = current && current.data && current.data.session || null;
-      if (!session) { const result = await client.auth.signInAnonymously(); if (!result.error) session = result.data.session || null; }
-    } catch (_) { /* Local and offline play never depends on cloud authentication. */ }
-    showHome(session,label); start.disabled = false; start.textContent = "LET'S PLAY 🎉";
+    const start = document.getElementById("pg-start");
+    start.disabled = true;
+    message.textContent = "";
+    // Never make starting a local game wait for a network or Supabase response.
+    showHome(session,label);
+    start.disabled = false;
+    start.textContent = "LET'S PLAY 🎉";
+    // Restore/create the cloud session silently for online multiplayer only.
+    client.auth.getSession().then(async ({data}) => {
+      session = data && data.session || null;
+      if (!session) {
+        const result = await client.auth.signInAnonymously();
+        if (!result.error) session = result.data.session || null;
+      }
+    }).catch(() => {
+      // Offline games stay available when cloud auth is disabled or unreachable.
+    });
   });
   const savedPlayerName = localStorage.getItem(PLAYER_NAME_KEY);
   if (savedPlayerName) document.getElementById("pg-username").value = savedPlayerName;
