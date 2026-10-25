@@ -147,7 +147,13 @@ Deno.serve(async (req: Request) => {
       const { error: insertError } = await admin.from("game_room_members").insert({ room_id: room.id, user_id: user.id, display_name: name });
       if (insertError) throw insertError;
       const state = { ...room.state, players: [...room.state.players, { id: user.id, name, wins: 0, voteId: "" }] };
-      await saveRoom(room, state, "lobby");
+      try {
+        await saveRoom(room, state, "lobby");
+      } catch (error) {
+        // Do not leave a membership row behind when the room changed concurrently.
+        await admin.from("game_room_members").delete().eq("room_id", room.id).eq("user_id", user.id);
+        throw error;
+      }
       return reply({ roomCode: code, state: publicState(state, user.id, room.host_id), isHost: false });
     }
     if (!member) throw new Error("You are not a member of this room.");
